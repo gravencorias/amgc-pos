@@ -1,0 +1,36 @@
+@use "./variable";
+@use "./loading";
+@use "./menu";
+@use "./login";
+@use "./store-settings";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background: var(--amgc-bg-layout);
+  color: var(--amgc-text-strong);
+}
+
+::selection {
+  background: var(--amgc-primary);
+  color: var(--amgc-on-primary);
+}
+
+/* Slim the scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--amgc-border);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--amgc-primary);
+}

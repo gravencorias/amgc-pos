@@ -1,0 +1,153 @@
+@use "./variable" as *;
+
+.dcwd-loader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #fff;
+  overflow: hidden;
+  transition: opacity 0.45s ease;
+  opacity: 1;
+
+  &--exiting {
+    opacity: 0;
+  }
+
+  &__ripples {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    height: 1px;
+
+    span {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 50%;
+      border: 2px solid #{$primary-color}55;
+      transform: translate(-50%, -50%);
+      animation: dcwd-ripple 2.8s ease-out infinite;
+
+      &:nth-child(2) {
+        animation-delay: 0.9s;
+      }
+
+      &:nth-child(3) {
+        animation-delay: 1.8s;
+      }
+    }
+  }
+
+  &__drop {
+    position: relative;
+    width: 96px;
+    height: 128px;
+    z-index: 1;
+    filter: drop-shadow(0 8px 12px #{$primary-color}33);
+    animation: dcwd-drop-bob 3.2s ease-in-out infinite;
+  }
+
+  &__water {
+    fill: $primary-color;
+  }
+
+  &__wave {
+    animation: dcwd-wave-drift 3.6s linear infinite;
+  }
+
+  &__wave--back {
+    fill: $secondary-color;
+    opacity: 0.55;
+    animation-duration: 4.4s;
+  }
+
+  &__wave--front {
+    fill: $primary-color;
+    opacity: 0.9;
+    animation-direction: reverse;
+  }
+
+  &__outline {
+    fill: none;
+    stroke: $primary-color;
+    stroke-width: 2.5;
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.03em;
+    color: $primary-color;
+  }
+
+  &__messages {
+    position: relative;
+    height: 22px;
+    min-width: 220px;
+    text-align: center;
+  }
+
+  &__message {
+    position: absolute;
+    inset: 0;
+    font-size: 13px;
+    color: #7d7d8c;
+    opacity: 0;
+    animation: dcwd-message-cycle 9.6s ease-in-out infinite;
+  }
+}
+
+@keyframes dcwd-ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.9;
+  }
+  100% {
+    width: 220px;
+    height: 220px;
+    opacity: 0;
+  }
+}
+
+@keyframes dcwd-drop-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes dcwd-wave-drift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-90px);
+  }
+}
+
+@keyframes dcwd-message-cycle {
+  0%,
+  4% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  8%,
+  22% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  26%,
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}

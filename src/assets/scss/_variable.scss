@@ -1,0 +1,36 @@
+// Brand color lives in three places: the antd token, Tailwind's `primary`, and here.
+// All three follow the store's Branding at runtime through --amgc-primary
+// (stores/common/theme.store.ts). $primary-color is only the first-paint default (Ube),
+// used by the boot loader before the store's branding is known.
+$primary-color: #6a45b0;
+$secondary-color: #9a7fd6;
+
+// Theme-aware surfaces for hand-rolled (non-antd) UI, e.g. Tailwind `bg-[var(--amgc-bg-surface)]`.
+// Tinted with the store theme's hue (--amgc-hue) so neutrals sit with the brand color.
+:root,
+[data-theme="light"] {
+  --amgc-primary: #{$primary-color};
+  --amgc-on-primary: #ffffff;
+  --amgc-hue: 270;
+  --amgc-bg-surface: #ffffff;
+  --amgc-bg-subtle: hsl(var(--amgc-hue) 18% 96%);
+  --amgc-bg-layout: hsl(var(--amgc-hue) 14% 96%);
+  --amgc-border: hsl(var(--amgc-hue) 12% 89%);
+  --amgc-text-strong: hsl(var(--amgc-hue) 20% 12%);
+  --amgc-text-muted: hsl(var(--amgc-hue) 8% 42%);
+  --amgc-paper: #fffffd;
+  --amgc-paper-ink: #1c1b1a;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --amgc-bg-surface: hsl(var(--amgc-hue) 9% 11%);
+  --amgc-bg-subtle: hsl(var(--amgc-hue) 9% 15%);
+  --amgc-bg-layout: hsl(var(--amgc-hue) 10% 7%);
+  --amgc-border: hsl(var(--amgc-hue) 8% 20%);
+  --amgc-text-strong: hsl(var(--amgc-hue) 15% 93%);
+  --amgc-text-muted: hsl(var(--amgc-hue) 8% 66%);
+  --amgc-paper: #ecebe6;
+  --amgc-paper-ink: #1c1b1a;
+  color-scheme: dark;
+}

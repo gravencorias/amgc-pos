@@ -1,0 +1,179 @@
+// Sign-in screen: the store's own color on the left, the PIN pad on the right.
+.amgc-login {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--amgc-bg-layout);
+}
+
+.amgc-login__brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: clamp(28px, 5vw, 64px);
+  overflow: hidden;
+  background: var(--amgc-primary);
+  color: var(--amgc-on-primary);
+
+  // Faint receipt-paper rules, for texture.
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 28px);
+    opacity: 0.06;
+    pointer-events: none;
+  }
+  > * {
+    position: relative;
+  }
+}
+
+.amgc-login__mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--amgc-on-primary);
+  color: var(--amgc-primary);
+  font-weight: 800;
+  font-size: 26px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.amgc-login__store {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(2.6rem, 5.5vw, 5rem);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  color: inherit;
+  text-wrap: balance;
+}
+
+.amgc-login__date {
+  margin: 16px 0 0;
+  font-size: 1.05rem;
+  opacity: 0.8;
+}
+
+.amgc-login__powered {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.amgc-login__panel {
+  display: grid;
+  place-items: center;
+  padding: clamp(24px, 5vw, 64px) 20px;
+}
+
+.amgc-login__card {
+  width: min(380px, 100%);
+}
+
+// PIN pad
+.amgc-pin {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.amgc-pin__dots {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 0;
+
+  span {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--amgc-border);
+    transition:
+      background-color 0.15s,
+      border-color 0.15s,
+      transform 0.15s;
+  }
+  span.is-filled {
+    background: var(--amgc-primary);
+    border-color: var(--amgc-primary);
+    transform: scale(1.1);
+  }
+  &.is-rejected {
+    animation: amgc-shake 0.45s;
+
+    span {
+      border-color: #d4380d;
+    }
+  }
+}
+@keyframes amgc-shake {
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+.amgc-pin__keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.amgc-pin__key.ant-btn {
+  height: 60px;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.amgc-pin__key--quiet.ant-btn {
+  font-size: 0.95rem;
+  color: var(--amgc-text-muted);
+}
+
+@media (max-width: 900px) {
+  .amgc-login {
+    grid-template-columns: 1fr;
+  }
+  .amgc-login__brand {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    padding: 20px;
+  }
+  .amgc-login__mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 18px;
+  }
+  .amgc-login__store {
+    max-width: none;
+    font-size: 1.6rem;
+  }
+  .amgc-login__date,
+  .amgc-login__powered {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amgc-pin__dots.is-rejected {
+    animation: none;
+  }
+}

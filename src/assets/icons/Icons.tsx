@@ -1,0 +1,20 @@
+// Nav and page-header icons. Passed around as component references (IRoute.icon,
+// PageHeader.icon), never as elements.
+export {
+  LuHouse as HomeIcon,
+  LuStore as StoreIcon,
+  LuPalette as BrandingIcon,
+  LuSettings2 as SettingsIcon,
+  LuLogOut as LogoutIcon,
+  LuMenu as MenuIcon,
+  LuPanelLeftClose as CollapseIcon,
+  LuPanelLeftOpen as ExpandIcon,
+  LuCircleCheck as DoneIcon,
+  LuCircle as TodoIcon,
+  LuReceiptText as ReceiptIcon,
+  LuShoppingBasket as ProductsIcon,
+  LuChartColumn as SalesIcon,
+  LuImageUp as UploadIcon,
+  LuDelete as BackspaceIcon,
+  LuLockKeyhole as LockIcon,
+} from "react-icons/lu";

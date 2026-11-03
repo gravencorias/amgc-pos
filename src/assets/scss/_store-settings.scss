@@ -1,0 +1,299 @@
+// Store details and Branding pages: theme picker, logo box, register preview, receipt preview.
+
+.amgc-theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.amgc-theme-picker__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 10px 12px;
+  border: 1px solid var(--amgc-border);
+  border-radius: 12px;
+  background: var(--amgc-bg-surface);
+  color: var(--amgc-text-strong);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+
+  &:hover {
+    border-color: var(--amgc-primary);
+  }
+  &.is-selected {
+    border-color: var(--amgc-primary);
+    box-shadow: 0 0 0 2px var(--amgc-primary);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--amgc-primary);
+    outline-offset: 2px;
+  }
+}
+.amgc-theme-picker__swatch {
+  display: flex;
+  width: 100%;
+  height: 38px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+
+  i {
+    flex: 1;
+    background: var(--sw-light);
+  }
+  i + i {
+    flex: 0.55;
+    background: var(--sw-dark);
+  }
+}
+.amgc-theme-picker__name {
+  font-weight: 650;
+}
+.amgc-theme-picker__note {
+  font-size: 12px;
+  color: var(--amgc-text-muted);
+}
+
+.amgc-logo-box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px dashed var(--amgc-border);
+  background: var(--amgc-primary);
+  color: var(--amgc-on-primary);
+  font-weight: 800;
+  font-size: 28px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: var(--amgc-bg-surface);
+  }
+}
+
+// Register preview. Uses its own --pv-* vars so it can show unsaved branding.
+.amgc-preview {
+  --pv-bg: hsl(var(--pv-hue) 14% 96%);
+  --pv-surface: #ffffff;
+  --pv-line: hsl(var(--pv-hue) 12% 88%);
+  --pv-text: hsl(var(--pv-hue) 20% 13%);
+  --pv-muted: hsl(var(--pv-hue) 8% 45%);
+  --pv-tile-l: 88%;
+
+  display: grid;
+  grid-template-columns: 13% minmax(0, 1fr) 33%;
+  aspect-ratio: 16 / 11;
+  width: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--pv-radius) + 4px);
+  border: 1px solid var(--pv-line);
+  background: var(--pv-bg);
+  color: var(--pv-text);
+  font-size: calc(10px * var(--pv-scale));
+  container-type: inline-size;
+
+  &.is-dark {
+    --pv-bg: hsl(var(--pv-hue) 10% 7%);
+    --pv-surface: hsl(var(--pv-hue) 9% 12%);
+    --pv-line: hsl(var(--pv-hue) 8% 21%);
+    --pv-text: hsl(var(--pv-hue) 15% 93%);
+    --pv-muted: hsl(var(--pv-hue) 8% 66%);
+    --pv-tile-l: 24%;
+  }
+}
+.amgc-preview__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-right: 1px solid var(--pv-line);
+  background: var(--pv-surface);
+
+  i {
+    width: 40%;
+    aspect-ratio: 1;
+    border-radius: calc(var(--pv-radius) / 2);
+    background: var(--pv-line);
+  }
+  i.is-on {
+    background: color-mix(in srgb, var(--pv-accent) 35%, transparent);
+  }
+}
+.amgc-preview__mark {
+  display: grid;
+  place-items: center;
+  width: 62%;
+  aspect-ratio: 1;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: calc(var(--pv-radius) * 0.8);
+  background: var(--pv-accent);
+  color: var(--pv-ink);
+  font-weight: 800;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: var(--pv-surface);
+  }
+}
+.amgc-preview__main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+}
+.amgc-preview__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  b {
+    font-size: 1.35em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  span {
+    flex: none;
+    padding: 0.35em 0.9em;
+    border-radius: 99px;
+    border: 1px solid var(--pv-line);
+    background: var(--pv-surface);
+    color: var(--pv-muted);
+  }
+}
+.amgc-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.amgc-preview__tile {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--pv-radius);
+  border: 1px solid var(--pv-line);
+  background: var(--pv-surface);
+
+  span {
+    aspect-ratio: 16 / 9;
+    background: hsl(var(--th) 40% var(--pv-tile-l));
+  }
+  b {
+    padding: 0.4em 0.6em 0;
+    font-size: 0.95em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  small {
+    padding: 0 0.6em 0.5em;
+    color: var(--pv-muted);
+    font-size: 0.9em;
+  }
+}
+.amgc-preview__ticket {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-left: 1px solid var(--pv-line);
+  background: var(--pv-surface);
+
+  > b {
+    font-size: 1.15em;
+  }
+  p {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin: 0;
+    font-size: 0.95em;
+  }
+}
+.amgc-preview__charge {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  padding: 0.7em 0.8em;
+  border-radius: var(--pv-radius);
+  background: var(--pv-accent);
+  color: var(--pv-ink);
+
+  span {
+    font-size: 0.9em;
+    font-weight: 600;
+  }
+  b {
+    font-size: 1.5em;
+  }
+}
+
+// Thermal receipt preview.
+.amgc-receipt-stage {
+  display: grid;
+  place-items: center;
+  padding: 20px 12px 24px;
+  border-radius: 12px;
+  background: var(--amgc-bg-subtle);
+}
+.amgc-receipt {
+  width: min(300px, 100%);
+  padding: 22px 20px 28px;
+  background: var(--amgc-paper);
+  color: var(--amgc-paper-ink);
+  font: 12px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.12));
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
+
+  p {
+    margin: 0;
+  }
+  hr {
+    margin: 9px 0;
+    border: 0;
+    border-top: 1px dashed rgb(28 27 26 / 0.45);
+  }
+}
+.amgc-receipt__logo {
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 6px;
+  border-radius: 8px;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.1);
+}
+.amgc-receipt__center {
+  text-align: center;
+}
+.amgc-receipt__store {
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.amgc-receipt__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.amgc-receipt__total {
+  font-weight: 700;
+  font-size: 14px;
+}
