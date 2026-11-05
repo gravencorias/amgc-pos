@@ -22,6 +22,20 @@ export const paymentMethodLabel: Record<PaymentMethodEnum, string> = {
   [PaymentMethodEnum.card]: "Card",
 };
 
+// A voided sale stays on record and leaves the day's totals.
+export enum SaleStatusEnum {
+  completed = "completed",
+  voided = "voided",
+}
+
+// Quick reasons for the void form; the cashier or manager can also type their own.
+export const VOID_REASON_PRESETS = [
+  "Wrong item or size",
+  "Customer cancelled",
+  "Charged twice",
+  "Wrong payment method",
+];
+
 export enum DiscountKindEnum {
   seniorCitizen = "sc",
   pwd = "pwd",

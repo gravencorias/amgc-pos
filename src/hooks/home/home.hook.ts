@@ -9,6 +9,8 @@ import SaleService from "../../services/sale.service";
 import { SALE_SUMMARY_KEY } from "../../constants/constantQueryKeys";
 import { phToday } from "../../utils/date.util";
 
+const DEFAULT_STORE_NAME = "My Café";
+
 export type ISetupStep = {
   key: string;
   title: string;
@@ -31,14 +33,24 @@ export const useHomeHook = () => {
   });
   const productCount = (categories ?? []).reduce((sum, c) => sum + c.productCount, 0);
 
+  // A new store starts as "My Café", which counts as no name yet.
+  const hasName = !!settings?.storeName && settings.storeName !== DEFAULT_STORE_NAME;
+  const hasAddress = !!settings?.address;
+
   // What a new store still has to fill in before its first receipt looks right.
   const setupSteps: ISetupStep[] = settings
     ? [
         {
           key: "details",
           title: "Name and address",
-          description: "Printed at the top of every receipt.",
-          done: !!settings.storeName && settings.storeName !== "My Café" && !!settings.address,
+          // Says which half is missing, since the default name looks like a real one.
+          description:
+            hasName === hasAddress
+              ? "Printed at the top of every receipt."
+              : hasAddress
+                ? `Change the store name from "${DEFAULT_STORE_NAME}".`
+                : "Add the store's address.",
+          done: hasName && hasAddress,
           path: CONSTANT_ROUTES.storeDetails,
         },
         {

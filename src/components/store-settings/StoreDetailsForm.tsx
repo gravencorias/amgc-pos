@@ -6,15 +6,15 @@ import ReceiptHeaderPreview from "./ReceiptHeaderPreview";
 interface IProps {
   form: FormInstance<IStoreDetailsFormValues>;
   storeSettings?: IStoreSettingsResponse;
+  values?: Partial<IStoreDetailsFormValues>;
+  isDirty: boolean;
   isSaving: boolean;
   onFinish: (values: IStoreDetailsFormValues) => void;
 }
 
 const TIN_PATTERN = /^\d{3}-\d{3}-\d{3}(-\d{3,5})?$/;
 
-const StoreDetailsForm = ({ form, storeSettings, isSaving, onFinish }: IProps) => {
-  const values = Form.useWatch([], form) as Partial<IStoreDetailsFormValues> | undefined;
-
+const StoreDetailsForm = ({ form, storeSettings, values, isDirty, isSaving, onFinish }: IProps) => {
   return (
     <Form form={form} layout="vertical" requiredMark="optional" onFinish={onFinish}>
       <Row gutter={[24, 24]}>
@@ -68,7 +68,7 @@ const StoreDetailsForm = ({ form, storeSettings, isSaving, onFinish }: IProps) =
           </Card>
 
           <div className="flex justify-end">
-            <Button type="primary" size="large" htmlType="submit" loading={isSaving} disabled={!storeSettings}>
+            <Button type="primary" size="large" htmlType="submit" loading={isSaving} disabled={!isDirty}>
               Save changes
             </Button>
           </div>

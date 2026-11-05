@@ -9,11 +9,25 @@ import { Toast } from "../../utils/http_service";
 import { emptyToNull, toStoreSettingsRequest } from "../../utils/store-settings.util";
 import { PUBLIC_STORE_SETTINGS_KEY, STORE_SETTINGS_KEY, useStoreSettingsQuery } from "./store-settings.hook";
 
+// The details as they'd be saved: trimmed, with empty optional text as null.
+const toDetails = (values: Partial<IStoreDetailsFormValues>) => ({
+  storeName: (values.storeName ?? "").trim(),
+  tagline: emptyToNull(values.tagline),
+  address: emptyToNull(values.address),
+  tin: emptyToNull(values.tin),
+  vatRegistered: !!values.vatRegistered,
+  receiptFooter: emptyToNull(values.receiptFooter),
+  showLogoOnReceipt: !!values.showLogoOnReceipt,
+});
+
 export const useStoreDetailsFormHook = () => {
   const queryClient = useQueryClient();
   const [form] = Form.useForm<IStoreDetailsFormValues>();
   const storeSettingsQuery = useStoreSettingsQuery();
   const { data } = storeSettingsQuery;
+
+  // The receipt preview follows the form, saved or not.
+  const values = Form.useWatch([], form) as Partial<IStoreDetailsFormValues> | undefined;
 
   // Synced off `data` (not onSuccess) so cached settings fill the form too.
   useEffect(() => {
@@ -45,23 +59,24 @@ export const useStoreDetailsFormHook = () => {
     },
   });
 
-  const onFinish = (values: IStoreDetailsFormValues) => {
+  const onFinish = (formValues: IStoreDetailsFormValues) => {
     if (!data) return;
-    updateMutation.mutate({
-      ...toStoreSettingsRequest(data),
-      storeName: values.storeName.trim(),
-      tagline: emptyToNull(values.tagline),
-      address: emptyToNull(values.address),
-      tin: emptyToNull(values.tin),
-      vatRegistered: values.vatRegistered,
-      receiptFooter: emptyToNull(values.receiptFooter),
-      showLogoOnReceipt: values.showLogoOnReceipt,
-    });
+    updateMutation.mutate({ ...toStoreSettingsRequest(data), ...toDetails(formValues) });
   };
+
+  // Save stays off until a field differs from what's saved, compared the way it would be sent.
+  const isDirty = (() => {
+    if (!data || !values) return false;
+    const saved = toDetails(data);
+    const current = toDetails(values);
+    return (Object.keys(saved) as (keyof typeof saved)[]).some((key) => saved[key] !== current[key]);
+  })();
 
   return {
     form,
     storeSettings: data,
+    values,
+    isDirty,
     isLoading: storeSettingsQuery.isLoading,
     onFinish,
     isSaving: updateMutation.isLoading,

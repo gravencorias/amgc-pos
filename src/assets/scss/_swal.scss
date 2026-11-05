@@ -16,6 +16,14 @@
     color: var(--amgc-text-muted);
   }
 
+  // The success check's animation hides its seams behind pieces painted in the popup's
+  // color. SweetAlert sets that color inline before the theme's background applies, so they
+  // come out white on a dark popup; !important puts them back on the theme's surface.
+  [class^="swal2-success-circular-line"],
+  .swal2-success-fix {
+    background-color: var(--amgc-bg-surface) !important;
+  }
+
   .swal2-actions {
     gap: 10px;
   }

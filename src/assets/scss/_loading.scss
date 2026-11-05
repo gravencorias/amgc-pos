@@ -1,7 +1,9 @@
 @use "./variable" as *;
 
-// The boot loader: a cup filling with coffee. It shows before the store's branding is
-// known, so --amgc-primary is still the default ($primary-color, Ube) at that point.
+// The boot loader: a cup filling with coffee, in the store's branding. theme.store applies
+// the branding this device last saw before the first render, so --amgc-primary and
+// data-theme are already the store's. $primary-color (Ube) is only the fallback for a
+// device's very first visit.
 .dcwd-loader {
   position: relative;
   display: flex;
@@ -27,7 +29,7 @@
   }
 
   &__cup-inside {
-    fill: color-mix(in srgb, var(--amgc-primary, #{$primary-color}) 7%, #fff);
+    fill: color-mix(in srgb, var(--amgc-primary, #{$primary-color}) 7%, var(--amgc-bg-surface, #fff));
   }
 
   // Fills to just under the rim, then drains, like someone sipping.

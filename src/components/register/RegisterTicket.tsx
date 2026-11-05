@@ -1,5 +1,5 @@
 import { Button, Empty, Input, Segmented, Typography } from "antd";
-import { CloseIcon, DiscountIcon, MinusIcon, PlusIcon } from "../../assets/icons/Icons";
+import { CloseIcon, DiscountIcon, LockIcon, MinusIcon, PlusIcon } from "../../assets/icons/Icons";
 import { DiscountKindEnum, discountKindLabel, OrderTypeEnum, orderTypeLabel } from "../../enums/sale.enum";
 import type { ICartLine } from "../../models/register/register.model";
 import type { ISaleDiscountRequest } from "../../models/sale/sale.request.model";
@@ -25,6 +25,8 @@ interface IProps {
   onDiscount: () => void;
   totals: ISaleTotals;
   vatRegistered: boolean;
+  // Set once today's Z reading is done: says so, and turns off Charge.
+  dayClosedNote: string | null;
   onCharge: () => void;
   onClear: () => void;
 }
@@ -50,6 +52,7 @@ const RegisterTicket = ({
   onDiscount,
   totals,
   vatRegistered,
+  dayClosedNote,
   onCharge,
   onClear,
 }: IProps) => (
@@ -185,12 +188,24 @@ const RegisterTicket = ({
         ) : null}
       </dl>
 
-      <button type="button" className="amgc-charge" disabled={!lines.length} onClick={onCharge}>
-        <span className="amgc-charge__label">
-          Charge <kbd className="amgc-kbd">F9</kbd>
-        </span>
-        <span className="amgc-charge__total tabular-nums">{peso(totals.total)}</span>
-      </button>
+      {/* Once the day is closed, this takes the Charge button's place at the same size, so
+          the ticket's layout doesn't change. */}
+      {dayClosedNote ? (
+        <div className="amgc-charge amgc-charge--closed" role="status">
+          <LockIcon size={22} className="shrink-0" />
+          <span className="amgc-charge__label">
+            Closed for today
+            <span className="amgc-charge__note">{dayClosedNote}</span>
+          </span>
+        </div>
+      ) : (
+        <button type="button" className="amgc-charge" disabled={!lines.length} onClick={onCharge}>
+          <span className="amgc-charge__label">
+            Charge <kbd className="amgc-kbd">F9</kbd>
+          </span>
+          <span className="amgc-charge__total tabular-nums">{peso(totals.total)}</span>
+        </button>
+      )}
 
       {lines.length > 0 && (
         <Button type="text" size="small" className="self-center" onClick={onClear}>

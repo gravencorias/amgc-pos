@@ -72,14 +72,40 @@ const buildTheme = (branding: IBrandingTheme): { theme: ThemeConfig; mode: Theme
   };
 };
 
-const initial = buildTheme(DEFAULT_BRANDING);
+// The last branding this device applied. Each install belongs to one store, so the boot
+// loader and the first paint can use the store's colors before the settings load.
+const BRANDING_KEY = "amgc_branding";
+
+const loadBranding = (): IBrandingTheme => {
+  try {
+    const saved = window.localStorage.getItem(BRANDING_KEY);
+    if (saved) return { ...DEFAULT_BRANDING, ...JSON.parse(saved) };
+  } catch {
+    // Unreadable or blocked storage: start from the default.
+  }
+  return DEFAULT_BRANDING;
+};
+
+const saveBranding = (branding: IBrandingTheme) => {
+  try {
+    window.localStorage.setItem(BRANDING_KEY, JSON.stringify(branding));
+  } catch {
+    // Storage full or blocked: the next boot uses the default colors.
+  }
+};
+
+const initialBranding = loadBranding();
+const initial = buildTheme(initialBranding);
 
 export const useThemeStore = create<States & Actions>()((set, get) => ({
   theme: initial.theme,
   mode: initial.mode,
-  branding: DEFAULT_BRANDING,
+  branding: initialBranding,
   siderCollapse: false,
-  applyBranding: (branding: IBrandingTheme) => set({ branding, ...buildTheme(branding) }),
+  applyBranding: (branding: IBrandingTheme) => {
+    saveBranding(branding);
+    set({ branding, ...buildTheme(branding) });
+  },
   // "Match device": the OS switched between light and dark.
   reapplyBranding: () => set({ ...buildTheme(get().branding) }),
   setSiderCollapse: (siderCollapse: boolean) => set(() => ({ siderCollapse })),

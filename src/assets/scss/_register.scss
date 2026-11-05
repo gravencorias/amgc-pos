@@ -232,8 +232,12 @@ $register-offset: 190px;
     background: color-mix(in srgb, var(--amgc-primary) 28%, var(--amgc-bg-surface));
   }
 }
+// The empty state may shrink to nothing on a short screen, so the totals and the
+// Charge button always stay in view.
 .amgc-ticket__empty.ant-empty {
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -343,6 +347,24 @@ $register-offset: 190px;
   align-items: flex-start;
   gap: 4px;
   font-weight: 700;
+}
+// After the Z reading: same place and size as Charge, but a status, not a button.
+.amgc-charge--closed {
+  justify-content: flex-start;
+  border: 1px solid color-mix(in srgb, #d48806 40%, transparent);
+  background: color-mix(in srgb, #faad14 14%, var(--amgc-bg-surface));
+  color: var(--amgc-text-strong);
+  cursor: default;
+
+  svg {
+    color: #d48806;
+  }
+}
+.amgc-charge__note {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--amgc-text-muted);
 }
 .amgc-charge__total {
   font-size: 30px;
@@ -455,6 +477,12 @@ $register-offset: 190px;
 .amgc-receipt__sub {
   padding-left: 2ch;
   opacity: 0.75;
+}
+// A voided receipt says so at the top and bottom, in bold, so a reprint can't pass as a sale.
+.amgc-receipt__void {
+  margin: 4px 0 !important;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 .amgc-receipt__note {
   margin-top: 4px !important;

@@ -1,4 +1,4 @@
-import type { DiscountKindEnum, OrderTypeEnum, PaymentMethodEnum } from "../../enums/sale.enum";
+import type { DiscountKindEnum, OrderTypeEnum, PaymentMethodEnum, SaleStatusEnum } from "../../enums/sale.enum";
 
 export interface ISaleTotals {
   gross: number;
@@ -22,9 +22,12 @@ export interface ISaleLineResponse {
   lineTotal: number;
 }
 
-// GET sale/summary: one Philippine calendar day.
+// GET sale/summary: one Philippine calendar day. Voided sales are left out of every
+// figure except voidCount and voidTotal.
 export interface ISaleSummaryResponse {
   date: string;
+  voidCount: number;
+  voidTotal: number;
   saleCount: number;
   // Sum of the sales' totals, after discounts.
   grossSales: number;
@@ -54,4 +57,15 @@ export interface ISaleResponse {
   discount: { kind: DiscountKindEnum; name: string; idNumber: string } | null;
   totals: ISaleTotals;
   payment: { method: PaymentMethodEnum; tendered: number; change: number; reference: string | null };
+  status: SaleStatusEnum;
+  voidInfo: ISaleVoidInfo | null;
+}
+
+// Who voided the sale and who approved it: the same person when an owner or manager
+// voids it, the cashier and the approving manager when a cashier does.
+export interface ISaleVoidInfo {
+  reason: string;
+  voidedAt: string;
+  voidedByName: string;
+  approvedByName: string;
 }

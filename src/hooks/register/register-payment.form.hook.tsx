@@ -1,12 +1,17 @@
 import { useEffect } from "react";
 import { Form, Typography } from "antd";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { SALE_LIST_KEY, SALE_SUMMARY_KEY } from "../../constants/constantQueryKeys";
+import {
+  DAY_CLOSE_CURRENT_KEY,
+  DAY_CLOSE_TODAY_KEY,
+  SALE_LIST_KEY,
+  SALE_SUMMARY_KEY,
+} from "../../constants/constantQueryKeys";
 import type { AxiosError } from "axios";
 import SaleService from "../../services/sale.service";
 import type { IRegisterPaymentFormValues } from "../../models/sale/sale.request.model";
 import type { ISaleResponse } from "../../models/sale/sale.response.model";
-import { PaymentMethodEnum } from "../../enums/sale.enum";
+import { PaymentMethodEnum, SaleStatusEnum } from "../../enums/sale.enum";
 import { useModalStore } from "../../stores/common/modal.store";
 import { useRegisterStore } from "../../stores/data/register.store";
 import { Toast } from "../../utils/http_service";
@@ -14,14 +19,54 @@ import { getApiErrorMessage } from "../../utils/helpers";
 import { cartGross, computeSaleTotals, focusRegisterSearch, quickCashAmounts } from "../../utils/sale.util";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
 import SaleReceiptPanel from "../../components/register/SaleReceiptPanel";
+import SaleVoidForm from "../../components/sales/SaleVoidForm";
 
 const { Text } = Typography;
+
+// The receipt after Charge, and the void form that can replace it. Module-level, reading
+// the stores directly, because the payment form (and this hook) unmount as soon as the
+// receipt takes the modal's place, and these keep swapping the body after that.
+const showReceipt = (sale: ISaleResponse) =>
+  useModalStore.getState().showModal({
+    properties: {
+      open: true,
+      centered: true,
+      width: 440,
+      title: (
+        <Text className="!text-[20px] font-semibold">
+          {sale.status === SaleStatusEnum.voided ? "Sale voided" : "Sale completed"}
+        </Text>
+      ),
+    },
+    body: <SaleReceiptPanel key={`${sale.id}-${sale.status}`} onVoid={() => showVoid(sale)} />,
+  });
+
+const showVoid = (sale: ISaleResponse) =>
+  useModalStore.getState().showModal({
+    properties: {
+      open: true,
+      centered: true,
+      width: 520,
+      title: <Text className="!text-[20px] font-semibold">Void receipt {sale.receiptNumber}</Text>,
+    },
+    body: (
+      <SaleVoidForm
+        key={sale.id}
+        sale={sale}
+        onBack={() => showReceipt(sale)}
+        onVoided={(voided) => {
+          useRegisterStore.getState().setLastSale(voided);
+          showReceipt(voided);
+        }}
+      />
+    ),
+  });
 
 // .tsx: on success it swaps the modal's body for the receipt.
 export const useRegisterPaymentFormHook = () => {
   const [form] = Form.useForm<IRegisterPaymentFormValues>();
   const queryClient = useQueryClient();
-  const { showModal, closeModal } = useModalStore();
+  const { closeModal } = useModalStore();
   const { lines, orderType, tableNo, discount, clearOrder, setLastSale } = useRegisterStore();
   const { data: settings } = useStoreSettingsQuery();
 
@@ -54,18 +99,14 @@ export const useRegisterPaymentFormHook = () => {
       // The Sales report and Home's snapshot include this sale now.
       queryClient.invalidateQueries(SALE_SUMMARY_KEY);
       queryClient.invalidateQueries(SALE_LIST_KEY);
-      showModal({
-        properties: {
-          open: true,
-          centered: true,
-          width: 440,
-          title: <Text className="!text-[20px] font-semibold">Sale completed</Text>,
-        },
-        body: <SaleReceiptPanel key={sale.id} />,
-      });
+      queryClient.invalidateQueries(DAY_CLOSE_CURRENT_KEY);
+      showReceipt(sale);
     },
-    onError: (error: AxiosError<{ message?: string; errors?: { title?: string }[] }>) =>
-      Toast.fire({ icon: "error", title: getApiErrorMessage(error, "The sale couldn't be completed. Try again.") }),
+    onError: (error: AxiosError<{ message?: string; errors?: { title?: string }[] }>) => {
+      // The day may have just been closed from another computer: check, so the Register shows it.
+      queryClient.invalidateQueries(DAY_CLOSE_TODAY_KEY);
+      Toast.fire({ icon: "error", title: getApiErrorMessage(error, "The sale couldn't be completed. Try again.") });
+    },
   });
 
   const handleSubmit = (values: IRegisterPaymentFormValues) => {

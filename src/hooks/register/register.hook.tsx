@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Typography, type InputRef } from "antd";
 import ProductService from "../../services/product.service";
 import type { IProductResponse } from "../../models/product/product.response.model";
-import { PRODUCT_ALL_KEY } from "../../constants/constantQueryKeys";
+import DayCloseService from "../../services/day-close.service";
+import { DAY_CLOSE_TODAY_KEY, PRODUCT_ALL_KEY } from "../../constants/constantQueryKeys";
+import { formatTime } from "../../utils/date.util";
 import { useDrawerStore } from "../../stores/common/drawer.store";
 import { useModalStore } from "../../stores/common/modal.store";
 import { useRegisterStore } from "../../stores/data/register.store";
@@ -28,6 +30,18 @@ export const useRegisterHook = () => {
   const productsQuery = useQuery({ queryKey: PRODUCT_ALL_KEY, queryFn: ProductService.getAll });
   const categoriesQuery = useCategoriesQuery();
   const { data: settings } = useStoreSettingsQuery();
+  // Once the day's Z reading is done, no more sales today. Checked every minute, because
+  // the day is often closed from another computer.
+  const todayQuery = useQuery({
+    queryKey: DAY_CLOSE_TODAY_KEY,
+    queryFn: DayCloseService.getToday,
+    refetchInterval: 60_000,
+  });
+  const today = todayQuery.data;
+  const dayClosedNote =
+    today?.isClosed && today.closedAt
+      ? `Z reading ${today.zNumber}, ${formatTime(today.closedAt)}, by ${today.closedByName}. Sales start again tomorrow.`
+      : null;
 
   const products = productsQuery.data ?? [];
   const query = normalizeSearch(register.search);
@@ -88,6 +102,10 @@ export const useRegisterHook = () => {
   };
 
   const openPayment = () => {
+    if (dayClosedNote) {
+      Toast.fire({ icon: "warning", title: "Today is closed. Sales start again tomorrow." });
+      return;
+    }
     if (!useRegisterStore.getState().lines.length) {
       Toast.fire({ icon: "info", title: "Add at least one item before charging." });
       return;
@@ -242,6 +260,7 @@ export const useRegisterHook = () => {
     totals,
     itemCount,
     vatRegistered: settings?.vatRegistered ?? true,
+    dayClosedNote,
     addProduct,
     openDiscount,
     openPayment,

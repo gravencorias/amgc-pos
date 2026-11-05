@@ -16,7 +16,10 @@ const SalesStats = ({ summary, isLoading }: IProps) => {
     {
       label: "Sales",
       value: summary.saleCount.toLocaleString("en-PH"),
-      note: `${summary.dineInCount} dine-in, ${summary.takeOutCount} take-out`,
+      // Voided sales aren't counted above; say how many there were.
+      note: `${summary.dineInCount} dine-in, ${summary.takeOutCount} take-out${
+        summary.voidCount ? `. ${summary.voidCount} voided (${peso(summary.voidTotal)})` : ""
+      }`,
     },
     { label: "Average sale", value: peso(summary.averageSale), note: `${summary.itemsSold} items sold` },
     {

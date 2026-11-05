@@ -5,6 +5,7 @@ import ListSectionTitle from "../../components/common/ListSectionTitle";
 import PageHeader from "../../components/common/PageHeader";
 import PaymentMixCard from "../../components/sales/PaymentMixCard";
 import SaleReceiptView from "../../components/sales/SaleReceiptView";
+import SaleVoidForm from "../../components/sales/SaleVoidForm";
 import SalesByHourChart from "../../components/sales/SalesByHourChart";
 import SalesStats from "../../components/sales/SalesStats";
 import SalesTable from "../../components/sales/SalesTable";
@@ -28,9 +29,21 @@ const Sales = () => {
         width: 440,
         title: <Text className="!text-[20px] font-semibold">Receipt {record.receiptNumber}</Text>,
       },
-      body: <SaleReceiptView key={record.id} />,
+      body: <SaleReceiptView key={`${record.id}-${record.status}`} onVoid={() => openVoid(record)} />,
     });
   };
+
+  // The void form takes the receipt's place in the same modal, and hands back to it.
+  const openVoid = (record: ISaleResponse) =>
+    sales.showModal({
+      properties: {
+        open: true,
+        centered: true,
+        width: 520,
+        title: <Text className="!text-[20px] font-semibold">Void receipt {record.receiptNumber}</Text>,
+      },
+      body: <SaleVoidForm key={record.id} sale={record} onBack={() => openReceipt(record)} onVoided={openReceipt} />,
+    });
 
   return (
     <div>

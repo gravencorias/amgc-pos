@@ -8,6 +8,7 @@ export const CONSTANT_ROUTES = {
   register: "/register",
   products: "/products",
   sales: "/sales",
+  closeDay: "/close-day",
   storeDetails: "/settings/store",
   branding: "/settings/branding",
   staff: "/settings/staff",

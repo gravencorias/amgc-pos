@@ -1,6 +1,13 @@
 import type { Ref } from "react";
 import { RECEIPT_DISCLAIMER } from "../../constants/constantReceipt";
-import { discountKindLabel, discountKindShort, orderTypeLabel, PaymentMethodEnum, paymentMethodLabel } from "../../enums/sale.enum";
+import {
+  discountKindLabel,
+  discountKindShort,
+  orderTypeLabel,
+  PaymentMethodEnum,
+  paymentMethodLabel,
+  SaleStatusEnum,
+} from "../../enums/sale.enum";
 import type { ISaleResponse } from "../../models/sale/sale.response.model";
 import type { IStoreSettingsResponse } from "../../models/store-settings/store-settings.response.model";
 import { peso } from "../../utils/sale.util";
@@ -19,9 +26,11 @@ const money = (value: number) => value.toLocaleString("en-PH", { minimumFraction
 const SaleReceipt = ({ sale, settings, ref }: IProps) => {
   const t = sale.totals;
   const when = new Date(sale.createdAt);
+  const voidInfo = sale.status === SaleStatusEnum.voided ? sale.voidInfo : null;
+  const voidedAt = voidInfo ? new Date(voidInfo.voidedAt) : null;
 
   return (
-    <div className="amgc-receipt" ref={ref}>
+    <div className={`amgc-receipt${voidInfo ? " is-void" : ""}`} ref={ref}>
       {settings?.showLogoOnReceipt && settings.logoUrl && <img className="amgc-receipt__logo" src={settings.logoUrl} alt="" />}
       <p className="amgc-receipt__center amgc-receipt__store">{settings?.storeName ?? "Store"}</p>
       {settings?.tagline && <p className="amgc-receipt__center">{settings.tagline}</p>}
@@ -32,6 +41,7 @@ const SaleReceipt = ({ sale, settings, ref }: IProps) => {
         </p>
       )}
       <hr />
+      {voidInfo && <p className="amgc-receipt__center amgc-receipt__void">*** VOID ***</p>}
       <p className="amgc-receipt__row">
         <span>Receipt no.</span>
         <span>{sale.receiptNumber}</span>
@@ -131,6 +141,29 @@ const SaleReceipt = ({ sale, settings, ref }: IProps) => {
           </p>
           <p>ID no.: {sale.discount.idNumber}</p>
           <p>Signature: ________________</p>
+        </>
+      )}
+      {voidInfo && voidedAt && (
+        <>
+          <hr />
+          <p className="amgc-receipt__center amgc-receipt__void">VOIDED. NOT A SALE.</p>
+          <p className="amgc-receipt__row">
+            <span>Voided</span>
+            <span>
+              {voidedAt.toLocaleDateString("en-PH")} {voidedAt.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}
+            </span>
+          </p>
+          <p className="amgc-receipt__row">
+            <span>By</span>
+            <span>{voidInfo.voidedByName}</span>
+          </p>
+          {voidInfo.approvedByName !== voidInfo.voidedByName && (
+            <p className="amgc-receipt__row">
+              <span>Approved by</span>
+              <span>{voidInfo.approvedByName}</span>
+            </p>
+          )}
+          <p>Reason: {voidInfo.reason}</p>
         </>
       )}
       <hr />

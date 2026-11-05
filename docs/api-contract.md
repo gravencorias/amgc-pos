@@ -172,6 +172,27 @@ Totals (`computeSaleTotals` in `src/utils/sale.util.ts`, the same math in the mo
 - `lines[]`: each line's `name`, `addOns[]` (`id`, `name`, `price`), `unitPrice` and `lineTotal`
 - `totals`: `gross`, `vatExemptAmount`, `discountAmount`, `total`, `vatableSales`, `vat` and `vatExemptSales`
 - `payment`: `method`, `tendered`, `change` and `reference`
+- `status`: `completed` or `voided`
+- `voidInfo`: `null`, or `{ reason, voidedAt, voidedByName, approvedByName }` once the sale is voided
+
+### Voiding a sale
+
+| Method | Route | Body | Returns |
+|---|---|---|---|
+| POST | `sale/void` | `ISaleVoidRequest`: `{ id, reason, approver }` | `ISaleResponse` (now `voided`) |
+
+A void cancels a **whole** sale. The sale is never deleted: it keeps its receipt number, is marked `voided` with `voidInfo`, and leaves every figure in `sale/summary`. Partial refunds aren't supported yet.
+
+- `reason`: required, at least 3 characters, stored up to 200.
+- **Owner or manager:** may void any completed sale. `approver` is ignored, and they're recorded as both `voidedByName` and `approvedByName`.
+- **Cashier:** may void only **their own sale from today** (Manila day), and only with `approver: { username, password }` belonging to an active owner or manager. The cashier is `voidedByName` and the approver is `approvedByName`.
+
+Return:
+- 404 if the sale doesn't exist
+- 400 if it's already voided, the reason is missing, or the approver's credentials are wrong or not an owner's or manager's. Use 400, not 401, for bad approver credentials: `http_service.ts` treats a 401 as "session ended".
+- 403 if a cashier tries someone else's sale or another day's
+
+A closed day's sales (see "Closing the day") can't be voided: return 400.
 
 ### Sales reports
 
@@ -182,10 +203,11 @@ A "day" is a **Philippine calendar day**: Asia/Manila, UTC+8. Group by Manila ti
 | Method | Route | Query | Returns |
 |---|---|---|---|
 | GET | `sale/summary` | `date` (`YYYY-MM-DD`; today if missing) | `ISaleSummaryResponse` |
-| GET | `sale` | `date`, `pageNumber`, `pageSize`, `search` (receipt or order number, cashier, or item name), `paymentMethod`, `sort` (`createdAt_ascend`, `createdAt_descend` (the default), `total_ascend`, `total_descend`) | `IPaginatedResult<ISaleResponse>` |
+| GET | `sale` | `date`, `pageNumber`, `pageSize`, `search` (receipt or order number, cashier, or item name), `paymentMethod`, `sort` (`createdAt_ascend`, `createdAt_descend` (the default), `total_ascend`, `total_descend`) | `IPaginatedResult<ISaleResponse>`, voided sales included |
 
-`ISaleSummaryResponse` (`src/models/sale/sale.response.model.ts`) has these fields:
+`ISaleSummaryResponse` (`src/models/sale/sale.response.model.ts`) has these fields. Every figure leaves out voided sales, except the two void fields:
 - `date`, `saleCount`, `grossSales` (the sum of `totals.total`, after discounts), `averageSale` and `itemsSold`
+- `voidCount` and `voidTotal` (the voided sales' `totals.total`)
 - `dineInCount` and `takeOutCount`
 - `discountCount` and `discountTotal` (VAT removed plus the 20%, across senior citizen and PWD sales)
 - `vatTotal`
@@ -194,6 +216,63 @@ A "day" is a **Philippine calendar day**: Asia/Manila, UTC+8. Group by Manila ti
 - `topProducts[8]`: `{ name, qty, total }`, by quantity sold
 
 **BIR:** the receipt says "This is not an official receipt" (`RECEIPT_DISCLAIMER` in `src/constants/constantReceipt.ts`) until the store's POS is accredited and has a Permit to Use. An official receipt also needs the PTU number, the machine serial number and the accreditation details, so add those fields to store settings at that point.
+
+## Closing the day (Z reading)
+
+**Owner or Manager only**, except `day-close/today`. Return 403 to a cashier.
+
+| Method | Route | Body / query | Returns |
+|---|---|---|---|
+| GET | `day-close/today` | none. **Anyone signed in.** | `IDayCloseTodayResponse`: `{ date, isClosed, zNumber, closedAt, closedByName }` |
+| GET | `day-close/current` | none | `IDayCloseCurrentResponse` |
+| POST | `day-close/create` | `IDayCloseRequest` | `IDayCloseResponse` |
+| GET | `day-close` | query: `pageNumber`, `pageSize` | `IPaginatedResult<IDayCloseResponse>`, newest day first, then highest Z number first within a day, reopened ones included |
+| POST | `day-close/reopen` | `{ id, reason }`. **Owner only.** | `IDayCloseResponse` (now `reopened`) |
+
+Models are in `src/models/day-close/`.
+
+**The day to close.** Days close in date order, so Z numbers and the grand total follow the calendar. The day due is the oldest Manila day before today that has sales and no closing, otherwise today. `day-close/current` returns that `date`, `isToday`, its `figures` so far, `suggestedFloat` (the last closing's `openingFloat`, or 0), and `close`. `close` is the saved Z reading once that day is closed, otherwise `null`.
+
+**`IDayFigures`.** Every figure leaves out voided sales, except the two void fields:
+- `firstReceipt`, `lastReceipt`: the day's receipt range, voided sales included
+- `saleCount`
+- `grossSales`: the sum of `totals.gross`
+- `discountCount`, `discountTotal`: VAT removed plus the 20%
+- `netSales`: the sum of `totals.total`
+- `vatableSales`, `vat`, `vatExemptSales`
+- `voidCount`, `voidTotal`
+- `cashSales`
+- `byPayment[]`: `{ method, count, total }`
+
+**`day-close/create`** takes `{ date, openingFloat, cashCount: [{ denomination, qty }], note }`.
+- `date` must be the day that's due. Otherwise return 400 "Close YYYY-MM-DD first."
+- Return 400 if that day is already closed, or if `openingFloat` is missing or negative.
+- Drop count rows with no quantity.
+- The server works out and stores:
+  - `zNumber`: sequential, 4 digits
+  - `figures`, frozen at closing
+  - `expectedCash` = `openingFloat + figures.cashSales`
+  - `countedCash`: the sum of `denomination × qty`
+  - `overShort` = `countedCash − expectedCash` (positive is over, negative is short)
+  - `grandTotalBefore`: the `grandTotalAfter` of the latest closing still `closed`, or 0
+  - `grandTotalAfter` = `grandTotalBefore + figures.netSales`. This is BIR's accumulated grand total.
+  - `closedAt`, and `closedByName` from the signed-in user
+
+**Reopening a day.** For a day closed by mistake. Every `IDayCloseResponse` has `status` (`closed` or `reopened`) and `reopenInfo` (`null`, or `{ reason, reopenedAt, reopenedByName }`).
+- **Owner only.** Return 403 to a manager or cashier.
+- **Only the latest closing still in force** can be reopened. That's `latestCloseId` in `day-close/current`. For any other, return 400, so the Z numbers and the grand total stay in order. Also return 400 if `reason` is under 3 characters or the closing is already reopened.
+- **The Z reading is kept,** marked `reopened`. A reopened closing no longer counts:
+  - The day becomes due again in `day-close/current`.
+  - Its sales can be voided again, and if it's today, new sales are allowed again.
+  - The next closing takes its `grandTotalBefore` from the latest closing still `closed`, so a reopened day's sales aren't counted twice.
+- **Closing the day again** saves a new Z reading with the next `zNumber`.
+- **BIR:** an accredited POS can't reopen a Z reading. Remove or lock this route at accreditation.
+
+**`day-close/today`** tells the Register whether today's Z reading is done. When it isn't, `zNumber`, `closedAt` and `closedByName` are `null`.
+
+**After a day is closed:**
+- `sale/create` returns 400 while today is closed: "Sales start again tomorrow".
+- `sale/void` returns 400 for any sale on a closed day.
 
 ## Staff
 

@@ -1,0 +1,102 @@
+// Close the day: the day's figures, the cash count and its over/short.
+
+// Label and amount rows, with a rule between groups.
+.amgc-figures,
+.amgc-cash-check {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  margin: 0;
+  font-size: 14px;
+
+  dt {
+    color: var(--amgc-text-muted);
+  }
+  dd {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .is-less {
+    color: #389e0d;
+  }
+  .is-total,
+  .is-strong {
+    color: var(--amgc-text-strong);
+    font-weight: 700;
+  }
+  .is-total {
+    font-size: 16px;
+  }
+  // The first row of a new group.
+  .is-break {
+    margin-top: 6px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--amgc-border);
+  }
+}
+
+// One row per denomination: label × count = amount.
+// Two columns where there's room. Each row keeps space for an amount like ₱10,000.00.
+.amgc-cash-count {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 8px 32px;
+  margin-bottom: 18px;
+}
+.amgc-cash-count__row {
+  display: grid;
+  grid-template-columns: 52px 10px 72px minmax(80px, 1fr);
+  align-items: center;
+  gap: 6px;
+
+  .ant-input-number {
+    width: 100%;
+  }
+}
+.amgc-cash-count__label {
+  font-weight: 600;
+}
+.amgc-cash-count__times {
+  color: var(--amgc-text-muted);
+  text-align: center;
+}
+.amgc-cash-count__amount {
+  color: var(--amgc-text-muted);
+  font-size: 13px;
+  text-align: right;
+}
+
+.amgc-cash-check {
+  padding: 14px 0 12px;
+  border-top: 1px dashed var(--amgc-border);
+}
+
+// Balanced, over or short: the one figure the person closing needs to see.
+.amgc-over-short {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--amgc-bg-subtle);
+
+  span {
+    font-weight: 700;
+  }
+  strong {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  &.is-over {
+    background: color-mix(in srgb, #389e0d 12%, var(--amgc-bg-surface));
+    color: #389e0d;
+  }
+  &.is-short {
+    background: color-mix(in srgb, #cf1322 10%, var(--amgc-bg-surface));
+    color: #cf1322;
+  }
+}

@@ -1,5 +1,6 @@
-import { BrandingIcon, HomeIcon, ProductsIcon, RegisterIcon, SalesIcon, SettingsIcon } from "../assets/icons/Icons";
+import { BrandingIcon, CloseDayIcon, HomeIcon, ProductsIcon, RegisterIcon, SalesIcon, SettingsIcon } from "../assets/icons/Icons";
 import Sales from "../pages/sales/Sales";
+import CloseDay from "../pages/close-day/CloseDay";
 import Register from "../pages/register/Register";
 import Products from "../pages/product/Products";
 import { CONSTANT_ROUTES } from "../constants/constantRoutes";
@@ -50,6 +51,14 @@ export const ProtectedRoutes: IRoute[] = [
     name: "Sales",
     icon: SalesIcon,
     component: Sales,
+    role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
+  },
+  {
+    key: "close-day",
+    path: CONSTANT_ROUTES.closeDay,
+    name: "Close day",
+    icon: CloseDayIcon,
+    component: CloseDay,
     role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
   },
   {

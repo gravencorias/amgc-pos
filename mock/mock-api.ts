@@ -179,6 +179,50 @@ type Sale = {
     vatExemptSales: number;
   };
   payment: { method: string; tendered: number; change: number; reference: string | null };
+  // "completed" or "voided". A void keeps the sale on record and takes it out of the totals.
+  status: string;
+  voidInfo: { reason: string; voidedAt: string; voidedByName: string; approvedByName: string } | null;
+};
+
+// One Philippine calendar day's figures, as the Z reading prints them. Voided sales are
+// left out of every figure except voidCount and voidTotal.
+type DayFigures = {
+  firstReceipt: string | null;
+  lastReceipt: string | null;
+  saleCount: number;
+  grossSales: number;
+  discountCount: number;
+  discountTotal: number;
+  netSales: number;
+  vatableSales: number;
+  vat: number;
+  vatExemptSales: number;
+  voidCount: number;
+  voidTotal: number;
+  cashSales: number;
+  byPayment: { method: string; count: number; total: number }[];
+};
+
+// A closed day (Z reading). Numbered in order, and the running grand total carries on.
+type DayClose = {
+  id: number;
+  zNumber: string;
+  date: string;
+  closedAt: string;
+  closedByName: string;
+  figures: DayFigures;
+  openingFloat: number;
+  cashCount: { denomination: number; qty: number }[];
+  expectedCash: number;
+  countedCash: number;
+  overShort: number;
+  note: string | null;
+  grandTotalBefore: number;
+  grandTotalAfter: number;
+  // "closed", or "reopened" once the owner reopens the day. A reopened Z reading stays on
+  // record but no longer closes the day or counts toward the grand total.
+  status: string;
+  reopenInfo: { reason: string; reopenedAt: string; reopenedByName: string } | null;
 };
 
 type Db = {
@@ -188,6 +232,7 @@ type Db = {
   addOns: AddOn[];
   products: Product[];
   sales: Sale[];
+  dayCloses: DayClose[];
 };
 
 const defaultDb = (): Db => ({
@@ -197,6 +242,7 @@ const defaultDb = (): Db => ({
   addOns: DEFAULT_ADD_ONS.map((a) => ({ ...a })),
   products: seedProducts(),
   sales: [],
+  dayCloses: [],
 });
 
 // Older db.json files lack the newer collections; those start from the defaults.
@@ -211,7 +257,14 @@ const loadDb = (): Db => {
         categories: Array.isArray(saved.categories) ? saved.categories : fresh.categories,
         addOns: Array.isArray(saved.addOns) ? saved.addOns : fresh.addOns,
         products: Array.isArray(saved.products) ? saved.products : fresh.products,
-        sales: Array.isArray(saved.sales) ? saved.sales : fresh.sales,
+        // Sales saved before voids existed are completed ones.
+        sales: Array.isArray(saved.sales)
+          ? saved.sales.map((s: Sale) => ({ ...s, status: s.status ?? "completed", voidInfo: s.voidInfo ?? null }))
+          : fresh.sales,
+        // Closings saved before reopening existed are closed ones.
+        dayCloses: Array.isArray(saved.dayCloses)
+          ? saved.dayCloses.map((c: DayClose) => ({ ...c, status: c.status ?? "closed", reopenInfo: c.reopenInfo ?? null }))
+          : fresh.dayCloses,
       };
     }
   } catch {
@@ -468,6 +521,8 @@ const seedSales = (): Sale[] => {
           change: round2(tendered - totals.total),
           reference: method === "cash" ? null : String(100000000 + Math.floor(rand() * 899999999)),
         },
+        status: "completed",
+        voidInfo: null,
       });
     }
   }
@@ -487,9 +542,106 @@ const seedSales = (): Sale[] => {
 };
 if (!db.sales.length) db.sales = seedSales();
 
+const sumMoney = (values: number[]) => round2(values.reduce((a, b) => a + b, 0));
+
+const dayFigures = (date: string): DayFigures => {
+  const ofDay = db.sales.filter((s) => phDate(s.createdAt) === date).sort((a, b) => a.receiptNumber.localeCompare(b.receiptNumber));
+  const sales = ofDay.filter((s) => s.status !== "voided");
+  const voided = ofDay.filter((s) => s.status === "voided");
+  const discounted = sales.filter((s) => s.discount);
+  const byPayment = ["cash", "ewallet", "card"].map((method) => {
+    const paid = sales.filter((s) => s.payment.method === method);
+    return { method, count: paid.length, total: sumMoney(paid.map((s) => s.totals.total)) };
+  });
+  return {
+    firstReceipt: ofDay[0]?.receiptNumber ?? null,
+    lastReceipt: ofDay[ofDay.length - 1]?.receiptNumber ?? null,
+    saleCount: sales.length,
+    grossSales: sumMoney(sales.map((s) => s.totals.gross)),
+    discountCount: discounted.length,
+    discountTotal: sumMoney(discounted.map((s) => s.totals.vatExemptAmount + s.totals.discountAmount)),
+    netSales: sumMoney(sales.map((s) => s.totals.total)),
+    vatableSales: sumMoney(sales.map((s) => s.totals.vatableSales)),
+    vat: sumMoney(sales.map((s) => s.totals.vat)),
+    vatExemptSales: sumMoney(sales.map((s) => s.totals.vatExemptSales)),
+    voidCount: voided.length,
+    voidTotal: sumMoney(voided.map((s) => s.totals.total)),
+    cashSales: byPayment[0].total,
+    byPayment,
+  };
+};
+
+const isDayClosed = (date: string) => db.dayCloses.some((c) => c.date === date && c.status === "closed");
+
+// The newest closing still in force. Closings are stored in the order they were made.
+const latestClosed = () => [...db.dayCloses].reverse().find((c) => c.status === "closed");
+
+// The day to close next: the oldest day with sales that isn't closed, else today.
+// Closing in date order keeps the Z numbers and the grand total in order.
+const dayToClose = () => {
+  const today = phDate(new Date().toISOString());
+  const open = [...new Set(db.sales.map((s) => phDate(s.createdAt)))].filter((d) => d < today && !isDayClosed(d)).sort();
+  return open[0] ?? today;
+};
+
+const buildDayClose = (
+  date: string,
+  openingFloat: number,
+  cashCount: { denomination: number; qty: number }[],
+  note: string | null,
+  closedByName: string,
+  closedAt: string,
+): DayClose => {
+  const figures = dayFigures(date);
+  // A reopened closing is skipped, so its day's sales aren't counted twice.
+  const grandTotalBefore = latestClosed()?.grandTotalAfter ?? 0;
+  const countedCash = sumMoney(cashCount.map((c) => c.denomination * c.qty));
+  const expectedCash = round2(openingFloat + figures.cashSales);
+  return {
+    id: nextId(db.dayCloses),
+    zNumber: String(db.dayCloses.length + 1).padStart(4, "0"),
+    date,
+    closedAt,
+    closedByName,
+    figures,
+    openingFloat,
+    cashCount,
+    expectedCash,
+    countedCash,
+    overShort: round2(countedCash - expectedCash),
+    note,
+    grandTotalBefore,
+    grandTotalAfter: round2(grandTotalBefore + figures.netSales),
+    status: "closed",
+    reopenInfo: null,
+  };
+};
+
+// Sample closings for every past day with sales, so only today is open in development.
+// Their counts match the expected cash exactly: ₱2,000 float, then the cash sales.
+if (!db.dayCloses.length) {
+  const today = phDate(new Date().toISOString());
+  const owner = db.users.find((u) => u.role.code === ROLES.owner.code);
+  [...new Set(db.sales.map((s) => phDate(s.createdAt)))]
+    .filter((d) => d < today)
+    .sort()
+    .forEach((date) => {
+      const cash = Math.round((2000 + dayFigures(date).cashSales) * 100);
+      // Whole pesos in ₱1 coins and the centavos in 1¢, so the count is exact.
+      const cashCount = [
+        { denomination: 1, qty: Math.floor(cash / 100) },
+        { denomination: 0.01, qty: cash % 100 },
+      ].filter((c) => c.qty > 0);
+      db.dayCloses.push(buildDayClose(date, 2000, cashCount, null, owner?.fullName ?? "Owner", `${date}T13:30:00.000Z`));
+    });
+}
+
 // One day's report: the figures the Sales page shows above the receipts list.
+// Voided sales are left out of every figure and counted on their own.
 const saleSummary = (date: string) => {
-  const sales = db.sales.filter((s) => phDate(s.createdAt) === date);
+  const ofDay = db.sales.filter((s) => phDate(s.createdAt) === date);
+  const sales = ofDay.filter((s) => s.status !== "voided");
+  const voided = ofDay.filter((s) => s.status === "voided");
   const sum = (values: number[]) => round2(values.reduce((a, b) => a + b, 0));
   const gross = sum(sales.map((s) => s.totals.total));
   const discounted = sales.filter((s) => s.discount);
@@ -519,6 +671,8 @@ const saleSummary = (date: string) => {
     discountCount: discounted.length,
     discountTotal: sum(discounted.map((s) => s.totals.vatExemptAmount + s.totals.discountAmount)),
     vatTotal: sum(sales.map((s) => s.totals.vat)),
+    voidCount: voided.length,
+    voidTotal: sum(voided.map((s) => s.totals.total)),
     byHour,
     byPayment: ["cash", "ewallet", "card"].map((method) => {
       const paid = sales.filter((s) => s.payment.method === method);
@@ -700,6 +854,9 @@ export const mockApi = (): Plugin => ({
         if (method === "POST" && path === "/sale/create") {
           const body = json();
           const lines = Array.isArray(body.lines) ? body.lines : [];
+          // After the Z reading, today's sales are final.
+          if (isDayClosed(phDate(new Date().toISOString())))
+            return send(res, 400, { message: "Today is already closed (Z reading done). Sales start again tomorrow." });
           if (!lines.length) return send(res, 400, { message: "The order is empty." });
 
           const priced: SaleLine[] = [];
@@ -758,8 +915,48 @@ export const mockApi = (): Plugin => ({
               change: round2(tendered - totals.total),
               reference: String(body.payment?.reference ?? "").trim() || null,
             },
+            status: "completed",
+            voidInfo: null,
           };
           db.sales.push(sale);
+          saveDb();
+          return send(res, 200, sale);
+        }
+
+        // Voids a whole sale: it stays on record, marked void, and leaves the day's totals.
+        // An owner or manager approves their own void. A cashier may void only their own
+        // sale from today, and an owner or manager signs off with their username and password.
+        if (method === "POST" && path === "/sale/void") {
+          const body = json();
+          const sale = db.sales.find((s) => s.id === Number(body.id));
+          if (!sale) return send(res, 404, { message: "That sale no longer exists." });
+          if (sale.status === "voided") return send(res, 400, { message: "This sale is already void." });
+          if (isDayClosed(phDate(sale.createdAt)))
+            return send(res, 400, { message: "That day is closed (Z reading done), so its sales can't be voided." });
+          const reason = String(body.reason ?? "").trim();
+          if (reason.length < 3) return send(res, 400, { message: "Say why the sale is being voided." });
+
+          let approver: User = user;
+          if (!isManager) {
+            if (sale.cashierId !== user.id || phDate(sale.createdAt) !== phDate(new Date().toISOString()))
+              return send(res, 403, { message: "A cashier can only void their own sales from today." });
+            const username = String(body.approver?.username ?? "").trim().toLowerCase();
+            const found = db.users.find((u) => u.username && u.username === username);
+            // 400, not 401: http_service treats a 401 as "session ended".
+            if (!found || found.password !== body.approver?.password)
+              return send(res, 400, { message: "The approver's username or password is incorrect." });
+            if (!found.isActive || found.role.code === ROLES.cashier.code)
+              return send(res, 400, { message: "Only an owner or manager can approve a void." });
+            approver = found;
+          }
+
+          sale.status = "voided";
+          sale.voidInfo = {
+            reason: reason.slice(0, 200),
+            voidedAt: new Date().toISOString(),
+            voidedByName: user.fullName,
+            approvedByName: approver.fullName,
+          };
           saveDb();
           return send(res, 200, sale);
         }
@@ -795,6 +992,92 @@ export const mockApi = (): Plugin => ({
           );
           if (sortOrder === "descend") list.reverse();
 
+          return send(res, 200, {
+            data: list.slice((pageNumber - 1) * pageSize, pageNumber * pageSize),
+            pageSize,
+            currentPage: pageNumber,
+            totalPages: Math.max(1, Math.ceil(list.length / pageSize)),
+            totalCount: list.length,
+          });
+        }
+
+        // Whether today is closed, for the Register. Everyone signed in can ask.
+        if (method === "GET" && path === "/day-close/today") {
+          const close = db.dayCloses.find((c) => c.date === todayPh && c.status === "closed");
+          return send(res, 200, {
+            date: todayPh,
+            isClosed: !!close,
+            zNumber: close?.zNumber ?? null,
+            closedAt: close?.closedAt ?? null,
+            closedByName: close?.closedByName ?? null,
+          });
+        }
+
+        // Closing the day (Z reading): owners and managers only.
+        if (/^\/day-close(\/|$)/.test(path) && !isManager)
+          return send(res, 403, { message: "Only an owner or manager can close the day." });
+
+        // The day due to be closed: its figures so far, or its Z reading once it's closed.
+        if (method === "GET" && path === "/day-close/current") {
+          const date = dayToClose();
+          const close = db.dayCloses.find((c) => c.date === date && c.status === "closed") ?? null;
+          const last = db.dayCloses[db.dayCloses.length - 1];
+          return send(res, 200, {
+            date,
+            isToday: date === todayPh,
+            close,
+            figures: close?.figures ?? dayFigures(date),
+            // Most stores start each day with the same float.
+            suggestedFloat: last?.openingFloat ?? 0,
+            // Only this closing can be reopened.
+            latestCloseId: latestClosed()?.id ?? null,
+          });
+        }
+
+        if (method === "POST" && path === "/day-close/create") {
+          const body = json();
+          const date = String(body.date ?? "");
+          const due = dayToClose();
+          if (isDayClosed(date)) return send(res, 400, { message: "That day is already closed." });
+          if (date !== due) return send(res, 400, { message: `Close ${due} first. Days close in order.` });
+          const openingFloat = money(body.openingFloat);
+          if (!(openingFloat >= 0)) return send(res, 400, { message: "Enter the starting cash. Use 0 if there was none." });
+          const cashCount = (Array.isArray(body.cashCount) ? body.cashCount : [])
+            .map((c: { denomination?: unknown; qty?: unknown }) => ({
+              denomination: money(c.denomination),
+              qty: Math.max(0, Math.floor(Number(c.qty) || 0)),
+            }))
+            .filter((c: { denomination: number; qty: number }) => c.denomination > 0 && c.qty > 0);
+          const note = String(body.note ?? "").trim().slice(0, 200) || null;
+          const close = buildDayClose(date, openingFloat, cashCount, note, user.fullName, new Date().toISOString());
+          db.dayCloses.push(close);
+          saveDb();
+          return send(res, 200, close);
+        }
+
+        // Reopens the latest closing, for a day closed by mistake. Owner only, with a reason.
+        // The Z reading stays on record, marked reopened; closing again saves a new one.
+        if (method === "POST" && path === "/day-close/reopen") {
+          if (user.role.code !== ROLES.owner.code) return send(res, 403, { message: "Only the owner can reopen a day." });
+          const body = json();
+          const close = db.dayCloses.find((c) => c.id === Number(body.id));
+          if (!close) return send(res, 404, { message: "That Z reading no longer exists." });
+          if (close.status !== "closed") return send(res, 400, { message: "That day is already reopened." });
+          if (close.id !== latestClosed()?.id)
+            return send(res, 400, { message: "Only the latest closed day can be reopened." });
+          const reason = String(body.reason ?? "").trim();
+          if (reason.length < 3) return send(res, 400, { message: "Say why the day is being reopened." });
+          close.status = "reopened";
+          close.reopenInfo = { reason: reason.slice(0, 200), reopenedAt: new Date().toISOString(), reopenedByName: user.fullName };
+          saveDb();
+          return send(res, 200, close);
+        }
+
+        if (method === "GET" && path === "/day-close") {
+          const pageNumber = Math.max(1, Number(query.get("pageNumber") ?? 1));
+          const pageSize = Math.max(1, Number(query.get("pageSize") ?? 10));
+          // Newest day first. A reopened day has two closings; the newer one (higher Z) leads.
+          const list = [...db.dayCloses].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
           return send(res, 200, {
             data: list.slice((pageNumber - 1) * pageSize, pageNumber * pageSize),
             pageSize,

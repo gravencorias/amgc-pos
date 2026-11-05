@@ -37,6 +37,20 @@ export interface ISaleRequest {
   payment: ISalePaymentRequest;
 }
 
+// POST sale/void. `approver` is an owner's or manager's sign-in, needed only when a
+// cashier voids; an owner or manager approves their own void.
+export interface ISaleVoidRequest {
+  id: number;
+  reason: string;
+  approver: { username: string; password: string } | null;
+}
+
+export interface ISaleVoidFormValues {
+  reason: string;
+  approverUsername?: string;
+  approverPassword?: string;
+}
+
 // The size / add-ons / note picker shown when a product has choices.
 export interface IRegisterOptionsFormValues {
   sizeName?: string;

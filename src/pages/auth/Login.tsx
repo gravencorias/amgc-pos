@@ -15,14 +15,16 @@ const Login = () => {
   return (
     <div className="amgc-login">
       <section className="amgc-login__brand">
-        <div className="amgc-login__mark">
-          {login.storeBranding?.logoUrl ? <img src={login.storeBranding.logoUrl} alt="" /> : getInitials(storeName)}
-        </div>
-        <div>
-          <h1 className="amgc-login__store">{storeName}</h1>
-          <p className="amgc-login__date">
-            {new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric" })}
-          </p>
+        <div className="amgc-login__heading">
+          <div className="amgc-login__mark">
+            {login.storeBranding?.logoUrl ? <img src={login.storeBranding.logoUrl} alt="" /> : getInitials(storeName)}
+          </div>
+          <div>
+            <h1 className="amgc-login__store">{storeName}</h1>
+            <p className="amgc-login__date">
+              {new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric" })}
+            </p>
+          </div>
         </div>
         <p className="amgc-login__powered">Powered by AMGC POS</p>
         <LoginLoungeIllustration lampOn={login.lampOn} onToggleLamp={login.toggleLamp} />

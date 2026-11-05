@@ -113,6 +113,14 @@
   }
 }
 
+// The logo with the store's name right under it, at the top of the panel.
+.amgc-login__heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 60px;
+}
+
 .amgc-login__mark {
   display: grid;
   place-items: center;

@@ -116,3 +116,41 @@
     background: var(--amgc-primary);
   }
 }
+
+// Voids: a voided row in the receipts list is muted.
+.amgc-row-void > td {
+  color: var(--amgc-text-muted);
+}
+
+// The void form: which sale, the approval box for a cashier, and quick reasons.
+.amgc-void-sale {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--amgc-bg-subtle);
+  font-size: 14px;
+
+  > strong {
+    font-size: 18px;
+  }
+}
+.amgc-void-approval {
+  margin-bottom: 16px;
+  padding: 14px 14px 0;
+  border: 1px dashed var(--amgc-border);
+  border-radius: 12px;
+}
+.amgc-reason-chip.ant-tag-checkable {
+  margin: 0;
+  padding: 3px 12px;
+  border: 1px solid var(--amgc-border);
+  border-radius: 999px;
+  font-size: 13px;
+}
+.amgc-reason-chip.ant-tag-checkable-checked {
+  border-color: var(--amgc-primary);
+}

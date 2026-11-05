@@ -80,7 +80,7 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
 
 - **Startup:**
   - `main.tsx` → `App.tsx` → `View.tsx`. `App.tsx` sets up the QueryClient from `app.hook.ts` (60s `staleTime`, no retry, no refetch on focus) and the antd `ConfigProvider`, which takes its theme from `theme.store`.
-  - `view.hook.ts` calls `account/me` whenever a token exists. `LoadingScreen` (`common/screen/`) covers the app while it fetches, for at least 1.2s, then fades out. It shows a cup filling with coffee (`_loading.scss`). Its colors are `var(--amgc-primary, $primary-color)`, which is still the Ube default at boot, because the store's branding isn't known yet.
+  - `view.hook.ts` calls `account/me` whenever a token exists. `LoadingScreen` (`common/screen/`) covers the app while it fetches, for at least 1.2s, then fades out. It shows a cup filling with coffee (`_loading.scss`). It uses the store's branding even though the settings haven't loaded: `theme.store` saves every `applyBranding` to localStorage (`amgc_branding`) and builds the first theme from it before the first render. Only a device's very first visit falls back to the Ube default.
   - A real error response clears the token. A network failure or a service-down status (`serviceDownStatus`) keeps it.
   - `http_service.ts` handles 401s on its own.
 - **Sign-in:** both mutations end in `onSignedIn`. It only sets the token and navigates home. Setting the token enables the `get-me` query, which fills `auth.store.userAccount`, so the sign-in response isn't stored directly.
@@ -112,7 +112,7 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
   - the CSS vars `--amgc-primary`, `--amgc-on-primary` and `--amgc-hue` on `<html>`
   - `data-theme`
 
-  `_variable.scss` derives `--amgc-bg-*`, `--amgc-border`, `--amgc-text-*` and `--amgc-paper*` from those, and Tailwind's `primary` is `var(--amgc-primary)`. Hand-rolled surfaces use these vars, not bare Tailwind colors. `$primary-color` is only the first-paint default (Ube) for the boot loader.
+  `_variable.scss` derives `--amgc-bg-*`, `--amgc-border`, `--amgc-text-*` and `--amgc-paper*` from those, and Tailwind's `primary` is `var(--amgc-primary)`. Hand-rolled surfaces use these vars, not bare Tailwind colors. `$primary-color` (Ube) is only the fallback before this device has saved any branding.
 - **Who applies it:**
   - Login applies `store-settings/public`, so the sign-in screen already looks like the store.
   - `ProtectedLayout` applies the full settings, through `useStoreSettingsHook`.
@@ -120,7 +120,7 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
 - **Previews never apply the theme globally.** `BrandingPreview` calls `resolveBranding` on the unsaved form values (`Form.useWatch`) and puts the result in inline CSS vars on its own root. The app's theme only changes once the save lands in the query cache.
 - **Menu and Sider stay `theme="light"`.** The dark algorithm darkens them. `theme="dark"` switches to antd's navy palette. A group's children sit on the Sider's surface, not antd's grey sub-menu panel (`_menu.scss`).
 - **Overriding antd in Sass:** antd's CSS-in-JS selectors are wrapped in `:where()`, but some still carry four classes (the inline sub-menu does). A partial's override has to out-count them, so check the computed style when an override doesn't take.
-- **SweetAlert follows the theme through `_swal.scss`.** Its rules are scoped under `.swal2-container` to outrank SweetAlert's injected styles. `http_service.ts` is verbatim and sets `confirmButtonColor` inline, so the button backgrounds there use `!important`. This covers every `Toast` and `showPopConfirmation`.
+- **SweetAlert follows the theme through `_swal.scss`.** Its rules are scoped under `.swal2-container` to outrank SweetAlert's injected styles. `http_service.ts` is verbatim and sets `confirmButtonColor` inline, so the button backgrounds there use `!important`. This covers every `Toast` and `showPopConfirmation`. The success icon's cover pieces (`swal2-success-circular-line-*`, `swal2-success-fix`) get their color inline from SweetAlert, so they also need `!important` to match the surface in dark mode.
 - **Scrollbars** are 6px app-wide (`index.scss`). The Register's product grid reaches 14px into its card's padding (8px gap + 6px bar), so the bar sits near the card's edge and the tiles still line up with the search box.
 
 ### Store settings (singleton resource)
@@ -130,6 +130,7 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
   - reads through `useStoreSettingsQuery()` (key `STORE_SETTINGS_KEY`)
   - builds its request with `toStoreSettingsRequest(cachedSettings)` and overrides only its own fields (`utils/store-settings.util.ts`)
   - sends empty optional text through `emptyToNull`
+  - keeps Save disabled until `isDirty`, which compares the watched values with the saved ones after the same cleanup the save does (`toDetails` in `store-details.form.hook.ts`)
   - on success, writes the response into `STORE_SETTINGS_KEY` with `setQueryData` and invalidates `PUBLIC_STORE_SETTINGS_KEY`
 - **The one exception to `onSuccess` on queries:** form values and branding are synced from the query's `data` in a `useEffect`. That way they also apply when the data comes from the cache.
 - **Logo** (`logo.hook.ts`):
@@ -159,17 +160,38 @@ Build the real API in a sibling `amgc-pos-api` repo with the `senior-backend-dcw
   - **Ticket:** the order ticket, with dine-in or take-out, a table number, quantities, a senior citizen or PWD discount, the totals and a Charge button.
   - **Order state** lives in `register.store.ts`. It isn't persisted, so a page reload drops the order.
   - **The main hook** is `register.hook.tsx`, a `.tsx` file because it opens the modals itself. It also owns the window-level shortcuts: F2 search, arrows and Enter in the grid, F4 discount, F8 order type, F9 charge, + and − quantity, Del to clear, and typing to start a search. The shortcuts are skipped while a modal, the drawer or a SweetAlert is open. The handler reads fresh values from a ref that an effect updates.
+  - **Focus in modals:** antd's Modal takes focus as it opens, which beats `autoFocus`. A form that should start in a field focuses it about 120ms later in an effect. The payment form uses `.amgc-payment-focus`, and the void and reopen forms use `.amgc-focus-first`.
   - **Modals:** each one gets a `key={Date.now()}` body so it remounts with fresh defaults. Opening one blurs the search box first, otherwise number keys and Enter would go into the search. Closing one calls `focusRegisterSearch()`, which is deferred because antd returns focus to whatever opened the modal.
   - **Size and add-ons picker** (`register-options.form.hook.ts`): 1–9 choose the size.
-  - **Payment** (`register-payment.form.hook.tsx`): cash with quick amounts and change, GCash or Maya, or card with a reference. It posts `sale/create`. On success it clears the order and swaps the modal body to `SaleReceiptPanel`, which has print (`react-to-print`, 80 mm) and Enter for the next order.
+  - **Payment** (`register-payment.form.hook.tsx`): cash with quick amounts and change, GCash or Maya, or card with a reference. It posts `sale/create`. On success it clears the order and swaps the modal body to `SaleReceiptPanel`, which has print (`react-to-print`, 80 mm), Enter for the next order, and **Void** (see Voids). `showReceipt` and `showVoid` are module-level in that file and read the stores with `getState()`, because the payment form unmounts as soon as the receipt replaces it.
   - **The server prices the sale.** The register's totals (`computeSaleTotals` in `utils/sale.util.ts`, Philippine VAT and the senior citizen / PWD rules) are for display only. The receipt prints the server's figures.
   - **Receipt:** `SaleReceipt` reuses the `.amgc-receipt` styles from the Store details preview. It ends with `RECEIPT_DISCLAIMER` until BIR accreditation.
 - **Sales** (Owner and Manager): one day's report.
   - **Day picker:** previous, next and Today. Future days are disabled. On today the header shows the live time after the date (`useClock`).
-  - **Content:** headline figures, sales by hour (CSS bars on one scale), how customers paid, top sellers, and a paged, searchable receipts table. Clicking a row opens the receipt with **Reprint**. There's one action per row, so it's a direct row click rather than a row menu.
-  - **Data:** `sale/summary` and `sale` (`SALE_SUMMARY_KEY`, `SALE_LIST_KEY`). A completed sale on the Register invalidates both.
+  - **Content:** headline figures, sales by hour (CSS bars on one scale), how customers paid, top sellers, and a paged, searchable receipts table. Clicking a row opens the receipt with **Reprint** and, for a completed sale, **Void sale**. It's a direct row click rather than a row menu, since the receipt is where both actions live.
+  - **Data:** `sale/summary` and `sale` (`SALE_SUMMARY_KEY`, `SALE_LIST_KEY`). A completed sale on the Register, and any void, invalidates both.
+- **Voids:** cancel a whole sale. Partial refunds aren't built yet.
+  - **The sale stays on record.** `sale/void` marks it `status: voided` with `voidInfo` (reason, when, voided by, approved by). The summary leaves it out of every figure and reports `voidCount` and `voidTotal`, which the Sales stat card notes. The list shows it muted, with a "Void" tag and the total struck through.
+  - **Who:** an owner or manager voids any completed sale and approves it themselves. A cashier voids only their own sale from today, from the receipt after Charge, and an owner or manager types their username and password into the same form to approve. Managers have no PIN, so it's their sign-in. The API enforces all of this; see `docs/api-contract.md`.
+  - **One form, two places:** `SaleVoidForm` (`components/sales/`) with `sale-void.form.hook.ts` takes `sale`, `onBack` and `onVoided`. The opener swaps it into the same modal in place of the receipt, and back again. That's `openVoid` in `Sales.tsx` and `showVoid` in the payment hook. The form shows the approval fields only when `checkIfManager` is false. It tells the cashier how to hand the money back, by payment method, with the payment's reference number.
+  - **Receipt:** a voided `SaleReceipt` prints `*** VOID ***` under the header and a "VOIDED. NOT A SALE." block with the details at the bottom, so a reprint can't pass as a sale.
   - **Days are Philippine calendar days:** `utils/date.util.ts` (`phToday`), and the API groups by Asia/Manila.
   - **Home** shows owners and managers a "Today so far" card from the same summary. Cashiers don't request it, because the API returns 403.
+- **Close day** (Owner and Manager): end-of-day cash count and Z reading, at `/close-day`.
+  - **One day at a time.** `day-close/current` picks the day that's due: an earlier day with sales that was never closed, otherwise today. The page shows that day's figures (`DayFigures`) and the count (`CashCountForm`). Once it's closed, the page shows a "closed" card with its Z reading. There's no day picker, because closings must go in date order.
+  - **The count:** starting float, prefilled from the last closing, plus quantities per denomination (`constants/constantCash.ts`, ₱1,000 down to 25¢). `close-day.hook.tsx` works out counted, expected (float + cash sales) and over/short live with `Form.useWatch`. The form's `counts` is keyed by denomination string ("1000", "0.25"). The server recomputes everything when it saves.
+  - **Closing** asks for confirmation through `showPopConfirmation`, then saves. The new Z reading opens in the modal (`ZReadingView` → `ZReading`, 80 mm, in the sale receipt's `.amgc-receipt` styles). It has the cash count, over/short, and the old and new grand totals (BIR's accumulated grand total).
+  - **A closed day is final.** The API refuses new sales while today is closed, and voids on any closed day.
+  - **The Register knows.** `register.hook.tsx` reads `day-close/today` (`DAY_CLOSE_TODAY_KEY`), which cashiers can read too. It refetches every 60s, because the day is often closed from another computer. Once closed, the ticket shows a "Today is closed" note with the Z number, time and who closed it. Charge reads "Closed for today" and is disabled, and F9 shows a toast. Adding items still works. Closing the day and a failed `sale/create` both invalidate the key.
+  - **Past closings** (`DayCloseTable`): newest first. A row opens its Z reading to reprint.
+  - **Reopening** (`day-close/reopen`) is for a day closed by mistake. It's **owner only** (`checkIfOwner`), and only for the latest closing still in force: `latestCloseId` from `day-close/current`, or the closing just made.
+    - `ZReadingView` gets `onReopen` only then, and the closed-day card shows "Reopen the day" (`canReopenCurrent`).
+    - `DayReopenForm` (`day-reopen.form.hook.ts`) asks for a reason and swaps into the modal in place of the Z reading, like the void form.
+    - The Z reading stays on record as `reopened` with `reopenInfo`. It's muted with a tag in the list, and prints "*** REOPENED ***".
+    - The day is due again. The next closing gets a new Z number and skips the reopened closing for the grand total.
+    - BIR doesn't allow this on an accredited POS; see the contract.
+  - **Keys:** `DAY_CLOSE_CURRENT_KEY` and `DAY_CLOSE_LIST_KEY`. A sale or a void also invalidates `DAY_CLOSE_CURRENT_KEY`, because the open day's figures change.
+  - **Mock:** sample closings are created for every past day with sales, so only today is open. Each one balances, with a ₱2,000 float.
 - **Products** (Owner and Manager): the menu, with categories and add-ons.
   - **Table:** a paged table with category chips (the same `CategoryChip`, wrapping), a sold-out filter and a search. Each row has an "On the menu" switch and a react-contexify menu (Edit, Mark sold out, Delete). The page calls only `product.hook.ts`.
   - **Form:** one modal form for add and edit (`product.form.hook.ts`). It covers name, category, one price or up to 4 sizes (`Form.List`), add-ons and availability.
@@ -184,8 +206,7 @@ Build the real API in a sibling `amgc-pos-api` repo with the `senior-backend-dcw
 
   The route's `role` lets owners and managers open the page. Inside it, `canManageStaff` in `utils/roleChecker.ts` decides each row: the owner manages everyone, a manager only cashiers, and nobody can turn off themselves or the owner. The row menu keeps forbidden actions visible but greyed out, with the reason (`permissionsFor` in the hook). The API enforces the same rules; see `docs/api-contract.md`.
 
-Everything in the prototype is built. Likely next steps:
-- voiding or refunding a sale, with a manager PIN
-- end-of-day cash count (Z reading)
+Everything in the prototype is built, plus voids and closing the day. Likely next steps:
+- partial refunds (single items) if stores ask for them
 - BIR accreditation fields on receipts
 - the real `amgc-pos-api`

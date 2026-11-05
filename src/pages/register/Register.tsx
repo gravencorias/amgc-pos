@@ -44,6 +44,7 @@ const Register = () => {
         onDiscount={r.openDiscount}
         totals={r.totals}
         vatRegistered={r.vatRegistered}
+        dayClosedNote={r.dayClosedNote}
         onCharge={r.openPayment}
         onClear={r.askClearOrder}
       />

@@ -1,7 +1,7 @@
 import { Empty, Table, Tag, Typography } from "antd";
 import type { TablePaginationConfig } from "antd";
 import type { ColumnsType, FilterValue, SorterResult } from "antd/es/table/interface";
-import { discountKindShort, orderTypeLabel, paymentMethodLabel } from "../../enums/sale.enum";
+import { discountKindShort, orderTypeLabel, paymentMethodLabel, SaleStatusEnum } from "../../enums/sale.enum";
 import type { IPaginatedResult } from "../../models/common/pagination";
 import type { ISaleResponse } from "../../models/sale/sale.response.model";
 import { formatTime } from "../../utils/date.util";
@@ -32,10 +32,17 @@ const SalesTable = ({ listLoading, saleDataList, onTableChange, onOpen }: IProps
       width: 130,
       render: (value: string, row) => (
         <div>
-          <Text strong className="block tabular-nums">
+          <Text strong className="block whitespace-nowrap tabular-nums">
             {value}
           </Text>
-          <Text className="!text-xs !text-[var(--amgc-text-muted)]">Order {row.orderNumber}</Text>
+          <span className="flex items-center gap-1.5 whitespace-nowrap">
+            <Text className="!text-xs !text-[var(--amgc-text-muted)]">Order {row.orderNumber}</Text>
+            {row.status === SaleStatusEnum.voided && (
+              <Tag color="error" className="!m-0 !px-1.5 !text-[11px] !leading-[18px]">
+                Void
+              </Tag>
+            )}
+          </span>
         </div>
       ),
     },
@@ -82,8 +89,9 @@ const SalesTable = ({ listLoading, saleDataList, onTableChange, onOpen }: IProps
       sorter: true,
       width: 120,
       align: "right",
+      // A voided sale's total is struck through: it isn't part of the day's takings.
       render: (_, row) => (
-        <Text strong className="tabular-nums">
+        <Text strong delete={row.status === SaleStatusEnum.voided} className="tabular-nums">
           {peso(row.totals.total)}
         </Text>
       ),
@@ -98,7 +106,7 @@ const SalesTable = ({ listLoading, saleDataList, onTableChange, onOpen }: IProps
       scroll={{ x: "max-content" }}
       columns={columns}
       dataSource={saleDataList?.data}
-      rowClassName="cursor-pointer"
+      rowClassName={(row) => `cursor-pointer${row.status === SaleStatusEnum.voided ? " amgc-row-void" : ""}`}
       onChange={onTableChange}
       locale={{ emptyText: <Empty description="No receipts match. Try another search or payment filter." /> }}
       onRow={(record) => ({ onClick: () => onOpen(record) })}
