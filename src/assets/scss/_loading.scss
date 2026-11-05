@@ -1,5 +1,7 @@
 @use "./variable" as *;
 
+// The boot loader: a cup filling with coffee. It shows before the store's branding is
+// known, so --amgc-primary is still the default ($primary-color, Ube) at that point.
 .dcwd-loader {
   position: relative;
   display: flex;
@@ -7,7 +9,7 @@
   align-items: center;
   justify-content: center;
   gap: 20px;
-  background: #fff;
+  background: var(--amgc-bg-surface, #fff);
   overflow: hidden;
   transition: opacity 0.45s ease;
   opacity: 1;
@@ -16,65 +18,78 @@
     opacity: 0;
   }
 
-  &__ripples {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 1px;
-    height: 1px;
-
-    span {
-      position: absolute;
-      top: 0;
-      left: 0;
-      border-radius: 50%;
-      border: 2px solid #{$primary-color}55;
-      transform: translate(-50%, -50%);
-      animation: dcwd-ripple 2.8s ease-out infinite;
-
-      &:nth-child(2) {
-        animation-delay: 0.9s;
-      }
-
-      &:nth-child(3) {
-        animation-delay: 1.8s;
-      }
-    }
-  }
-
-  &__drop {
+  &__cup {
     position: relative;
-    width: 96px;
-    height: 128px;
-    z-index: 1;
-    filter: drop-shadow(0 8px 12px #{$primary-color}33);
-    animation: dcwd-drop-bob 3.2s ease-in-out infinite;
+    width: 120px;
+    height: 120px;
+    overflow: visible;
+    filter: drop-shadow(0 10px 14px color-mix(in srgb, var(--amgc-primary, #{$primary-color}) 22%, transparent));
   }
 
-  &__water {
-    fill: $primary-color;
+  &__cup-inside {
+    fill: color-mix(in srgb, var(--amgc-primary, #{$primary-color}) 7%, #fff);
+  }
+
+  // Fills to just under the rim, then drains, like someone sipping.
+  &__fill {
+    animation: dcwd-cup-fill 2.8s ease-in-out infinite alternate;
   }
 
   &__wave {
-    animation: dcwd-wave-drift 3.6s linear infinite;
+    animation: dcwd-wave-drift 2.4s linear infinite;
   }
 
-  &__wave--back {
-    fill: $secondary-color;
-    opacity: 0.55;
-    animation-duration: 4.4s;
-  }
-
-  &__wave--front {
-    fill: $primary-color;
-    opacity: 0.9;
+  &__wave--crema {
+    fill: #c8935f;
+    animation-duration: 3.4s;
     animation-direction: reverse;
   }
 
-  &__outline {
+  &__wave--coffee {
+    fill: #6f4127;
+  }
+
+  &__outline,
+  &__handle,
+  &__saucer {
     fill: none;
-    stroke: $primary-color;
-    stroke-width: 2.5;
+    stroke: var(--amgc-primary, #{$primary-color});
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &__outline {
+    stroke-width: 5;
+  }
+
+  &__handle {
+    stroke-width: 8;
+  }
+
+  &__saucer {
+    stroke-width: 6;
+  }
+
+  &__saucer--base {
+    stroke-width: 4;
+    opacity: 0.4;
+  }
+
+  &__wisp {
+    fill: none;
+    stroke: var(--amgc-primary, #{$primary-color});
+    stroke-width: 4;
+    stroke-linecap: round;
+    opacity: 0;
+    animation: dcwd-steam-rise 2.6s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.85s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 1.7s;
+    }
   }
 
   &__title {
@@ -82,7 +97,7 @@
     font-weight: 700;
     font-size: 18px;
     letter-spacing: 0.03em;
-    color: $primary-color;
+    color: var(--amgc-primary, #{$primary-color});
   }
 
   &__messages {
@@ -96,32 +111,18 @@
     position: absolute;
     inset: 0;
     font-size: 13px;
-    color: #7d7d8c;
+    color: var(--amgc-text-muted, #7d7d8c);
     opacity: 0;
     animation: dcwd-message-cycle 9.6s ease-in-out infinite;
   }
 }
 
-@keyframes dcwd-ripple {
+@keyframes dcwd-cup-fill {
   0% {
-    width: 0;
-    height: 0;
-    opacity: 0.9;
+    transform: translateY(80px);
   }
   100% {
-    width: 220px;
-    height: 220px;
-    opacity: 0;
-  }
-}
-
-@keyframes dcwd-drop-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
+    transform: translateY(6px);
   }
 }
 
@@ -131,6 +132,20 @@
   }
   100% {
     transform: translateX(-90px);
+  }
+}
+
+@keyframes dcwd-steam-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  40% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
   }
 }
 
@@ -149,5 +164,27 @@
   100% {
     opacity: 0;
     transform: translateY(-6px);
+  }
+}
+
+// Reduced motion: a half-full cup, still steam, and the first message only.
+@media (prefers-reduced-motion: reduce) {
+  .dcwd-loader__fill,
+  .dcwd-loader__wave,
+  .dcwd-loader__wisp,
+  .dcwd-loader__message {
+    animation: none;
+  }
+
+  .dcwd-loader__fill {
+    transform: translateY(36px);
+  }
+
+  .dcwd-loader__wisp {
+    opacity: 0.45;
+  }
+
+  .dcwd-loader__message:first-child {
+    opacity: 1;
   }
 }

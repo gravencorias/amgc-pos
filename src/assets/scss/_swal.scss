@@ -1,0 +1,64 @@
+// SweetAlert2 (Toast and showPopConfirmation in utils/http_service.ts) dressed in the store's
+// theme. Scoped under .swal2-container to outrank the styles SweetAlert injects itself.
+// http_service.ts is copied verbatim and sets confirmButtonColor inline, so the button
+// backgrounds need !important to win over that inline style.
+.swal2-container {
+  .swal2-popup {
+    border-radius: 16px;
+    background: var(--amgc-bg-surface);
+    color: var(--amgc-text-strong);
+    font-family: inherit;
+  }
+  .swal2-title {
+    color: var(--amgc-text-strong);
+  }
+  .swal2-html-container {
+    color: var(--amgc-text-muted);
+  }
+
+  .swal2-actions {
+    gap: 10px;
+  }
+  .swal2-styled.swal2-confirm,
+  .swal2-styled.swal2-cancel {
+    min-width: 120px;
+    margin: 0;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    box-shadow: none;
+    transition:
+      filter 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+
+    // SweetAlert darkens on hover with a background image; the theme handles hover instead.
+    &:hover {
+      background-image: none;
+    }
+    &:focus-visible {
+      outline: 2px solid var(--amgc-primary);
+      outline-offset: 2px;
+      box-shadow: none;
+    }
+  }
+  .swal2-styled.swal2-confirm {
+    border: 1px solid var(--amgc-primary);
+    background: var(--amgc-primary) !important;
+    color: var(--amgc-on-primary);
+
+    &:hover {
+      filter: brightness(1.07);
+    }
+  }
+  .swal2-styled.swal2-cancel {
+    border: 1px solid var(--amgc-border);
+    background: var(--amgc-bg-surface) !important;
+    color: var(--amgc-text-strong);
+
+    &:hover {
+      border-color: var(--amgc-primary);
+      color: var(--amgc-primary);
+    }
+  }
+}

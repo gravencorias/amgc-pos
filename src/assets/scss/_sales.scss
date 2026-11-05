@@ -1,0 +1,118 @@
+// Sales report: headline figures, the hourly bars and the top-sellers list.
+
+.amgc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 16px;
+}
+.amgc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--amgc-bg-surface);
+}
+.amgc-stat__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amgc-text-muted);
+}
+.amgc-stat__value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.amgc-stat__note {
+  font-size: 12px;
+  color: var(--amgc-text-muted);
+}
+
+// Hourly bars: heights are a share of the busiest hour (set inline).
+.amgc-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 6px;
+  height: 200px;
+  padding-top: 22px;
+  border-bottom: 1px solid var(--amgc-border);
+  background-image: linear-gradient(to top, var(--amgc-border) 1px, transparent 1px);
+  background-size: 100% 25%;
+  background-position: bottom;
+}
+.amgc-bars__col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  cursor: default;
+}
+.amgc-bars__bar {
+  display: block;
+  min-height: 2px;
+  border-radius: 5px 5px 0 0;
+  background: color-mix(in srgb, var(--amgc-primary) 55%, var(--amgc-bg-surface));
+
+  &.is-peak {
+    background: var(--amgc-primary);
+  }
+  &.is-empty {
+    background: var(--amgc-border);
+  }
+}
+.amgc-bars__value {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  bottom: calc(100% + 2px);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+// The peak's label sits on top of its bar, not above the whole column.
+.amgc-bars__col:has(.is-peak) .amgc-bars__value {
+  position: static;
+  translate: none;
+  margin-bottom: 4px;
+  text-align: center;
+}
+.amgc-bars__axis {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--amgc-text-muted);
+  white-space: nowrap;
+}
+
+.amgc-top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.amgc-top-list__bar {
+  display: block;
+  height: 6px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--amgc-bg-subtle);
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--amgc-primary);
+  }
+}

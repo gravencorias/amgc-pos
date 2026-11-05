@@ -24,7 +24,8 @@ export const useLoginHook = () => {
   const [passwordForm] = Form.useForm<IPasswordLoginRequest>();
   const setToken = useAuthStore((state) => state.setToken);
   const applyBranding = useThemeStore((state) => state.applyBranding);
-  const { method, pin, pinRejected, setMethod, pressDigit, backspace, clearPin, setPinRejected } = useLoginStore();
+  const { method, pin, pinRejected, lampOn, setMethod, pressDigit, backspace, clearPin, setPinRejected, toggleLamp } =
+    useLoginStore();
 
   // The store's name, logo and colors, so the sign-in screen already looks like the store.
   const publicSettingsQuery = useQuery({
@@ -116,5 +117,7 @@ export const useLoginHook = () => {
     passwordForm,
     onPasswordFinish,
     isPasswordLoading: passwordMutation.isLoading,
+    lampOn,
+    toggleLamp,
   };
 };

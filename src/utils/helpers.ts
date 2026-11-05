@@ -7,6 +7,26 @@ export const getInitials = (name: string | undefined | null) => {
   return ((words[0]?.[0] ?? "") + (words[1]?.[0] ?? "")).toUpperCase() || "?";
 };
 
+// The message to show for a failed request: ASP.NET Core's validation envelope
+// ("One or more errors occurred") carries the useful text in errors[0].title.
+export const getApiErrorMessage = (
+  error: { response?: { data?: { message?: string; errors?: { title?: string }[] } } } | null | undefined,
+  fallback: string,
+) => error?.response?.data?.errors?.[0]?.title ?? error?.response?.data?.message ?? fallback;
+
+// ₱165 for whole amounts, ₱165.50 otherwise: how prices read on menus.
+export const pesoAmount = (value: number) =>
+  "₱" +
+  value.toLocaleString("en-PH", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+
+export const formatDateTime =(value: string | null | undefined) =>
+  value
+    ? new Date(value).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    : null;
+
 export const getGreeting = (date = new Date()) => {
   const h = date.getHours();
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";

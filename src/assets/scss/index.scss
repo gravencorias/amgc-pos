@@ -1,8 +1,17 @@
+// External libraries first: _staff.scss overrides react-contexify's :root
+// variables, and with equal specificity the later rule wins (same order as payroll).
+@use "react-contexify/dist/ReactContexify.css";
+
 @use "./variable";
 @use "./loading";
 @use "./menu";
 @use "./login";
 @use "./store-settings";
+@use "./staff";
+@use "./product";
+@use "./register";
+@use "./sales";
+@use "./swal";
 
 @tailwind base;
 @tailwind components;

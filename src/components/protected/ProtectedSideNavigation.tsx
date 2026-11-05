@@ -1,6 +1,5 @@
-import { Avatar, Button, Tooltip, Typography } from "antd";
+import { Avatar, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
-import { CollapseIcon, ExpandIcon } from "../../assets/icons/Icons";
 import { CONSTANT_ROUTES } from "../../constants/constantRoutes";
 import type { IUserAccountResponse } from "../../models/auth/authentication.response";
 import type { IStoreSettingsResponse } from "../../models/store-settings/store-settings.response.model";
@@ -14,17 +13,18 @@ interface IProps {
   userAccount: IUserAccountResponse;
   storeSettings?: IStoreSettingsResponse;
   isCollapsed?: boolean;
-  setIsCollapsed?: (isCollapsed: boolean) => void;
 }
 
-const ProtectedSideNavigation = ({ userAccount, storeSettings, isCollapsed, setIsCollapsed }: IProps) => {
+// The collapse button isn't here: it sits on the Sider's edge (SiderToggle in ProtectedLayout),
+// and the Drawer copy of this navigation has no collapse.
+const ProtectedSideNavigation = ({ userAccount, storeSettings, isCollapsed }: IProps) => {
   const navigate = useNavigate();
   const storeName = storeSettings?.storeName ?? "";
   const user = userAccount.userInfo;
 
   return (
     <div className="flex h-full flex-col gap-2 p-4">
-      <div className={`flex items-center gap-3 ${isCollapsed ? "flex-col" : ""}`}>
+      <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
         <button
           type="button"
           className="amgc-store-mark"
@@ -40,16 +40,6 @@ const ProtectedSideNavigation = ({ userAccount, storeSettings, isCollapsed, setI
             </Text>
             <Text className="block !text-xs !text-[var(--amgc-text-muted)]">AMGC POS</Text>
           </div>
-        )}
-        {setIsCollapsed && (
-          <Tooltip title={isCollapsed ? "Expand menu" : "Collapse menu"} placement="right">
-            <Button
-              type="text"
-              aria-label={isCollapsed ? "Expand menu" : "Collapse menu"}
-              icon={isCollapsed ? <ExpandIcon size={18} /> : <CollapseIcon size={18} />}
-              onClick={() => setIsCollapsed(!isCollapsed)}
-            />
-          </Tooltip>
         )}
       </div>
 

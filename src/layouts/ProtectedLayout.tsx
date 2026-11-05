@@ -7,6 +7,7 @@ import { useAuthStore } from "../stores/common/auth.store";
 import { useThemeStore } from "../stores/common/theme.store";
 import ProtectedSideNavigation from "../components/protected/ProtectedSideNavigation";
 import ProtectedTopHeading from "../components/protected/ProtectedTopHeading";
+import SiderToggle from "../components/protected/SiderToggle";
 import useWindowSize from "../hooks/window/window.size.hook";
 import { useStoreSettingsHook } from "../hooks/store-settings/store-settings.hook";
 import Modal from "../components/common/modals/Modal";
@@ -26,24 +27,28 @@ const ProtectedLayout = () => {
   return (
     <>
       <Layout className="h-screen overflow-hidden">
-        {/* Hidden below lg; the menu button in ProtectedTopHeading opens the same navigation in a Drawer. */}
-        <Sider
-          collapsible
-          collapsed={siderCollapse}
-          onCollapse={(value) => setSiderCollapse(value)}
-          width={windowSize !== "xxxl" ? 280 : 320}
-          collapsedWidth={88}
-          trigger={null}
-          theme="light"
-          className="hidden lg:block !bg-[var(--amgc-bg-surface)] border-r border-solid border-0 border-[var(--amgc-border)] overflow-y-auto"
-        >
-          <ProtectedSideNavigation
-            userAccount={userAccount}
-            storeSettings={storeSettingsQuery.data}
-            isCollapsed={siderCollapse}
-            setIsCollapsed={setSiderCollapse}
-          />
-        </Sider>
+        {/* Hidden below lg; the menu button in ProtectedTopHeading opens the same navigation in a Drawer.
+            The wrapper holds the toggle, which hangs over the Sider's edge where the Sider's own
+            scrolling would clip it. */}
+        <div className="relative hidden lg:block">
+          <Sider
+            collapsible
+            collapsed={siderCollapse}
+            onCollapse={(value) => setSiderCollapse(value)}
+            width={windowSize !== "xxxl" ? 280 : 320}
+            collapsedWidth={88}
+            trigger={null}
+            theme="light"
+            className="h-full !bg-[var(--amgc-bg-surface)] border-r border-solid border-0 border-[var(--amgc-border)] overflow-y-auto"
+          >
+            <ProtectedSideNavigation
+              userAccount={userAccount}
+              storeSettings={storeSettingsQuery.data}
+              isCollapsed={siderCollapse}
+            />
+          </Sider>
+          <SiderToggle isCollapsed={siderCollapse} onToggle={() => setSiderCollapse(!siderCollapse)} />
+        </div>
 
         <Layout className="h-screen overflow-hidden min-h-0">
           <ProtectedTopHeading storeSettings={storeSettingsQuery.data} />

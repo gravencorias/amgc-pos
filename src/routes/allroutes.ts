@@ -1,10 +1,14 @@
-import { BrandingIcon, HomeIcon, SettingsIcon } from "../assets/icons/Icons";
+import { BrandingIcon, HomeIcon, ProductsIcon, RegisterIcon, SalesIcon, SettingsIcon } from "../assets/icons/Icons";
+import Sales from "../pages/sales/Sales";
+import Register from "../pages/register/Register";
+import Products from "../pages/product/Products";
 import { CONSTANT_ROUTES } from "../constants/constantRoutes";
 import type { IRoute } from "../models/common/route.model";
 import Login from "../pages/auth/Login";
 import Home from "../pages/home/Home";
 import Branding from "../pages/store-settings/Branding";
 import StoreDetails from "../pages/store-settings/StoreDetails";
+import Staff from "../pages/staff/Staff";
 import { CONSTANT_ROLES } from "../roles/contants.roles";
 
 export const PublicRoutes: IRoute[] = [
@@ -25,6 +29,30 @@ export const ProtectedRoutes: IRoute[] = [
     component: Home,
   },
   {
+    // Everyone signed in sells, so no role list.
+    key: "register",
+    path: CONSTANT_ROUTES.register,
+    name: "Register",
+    icon: RegisterIcon,
+    component: Register,
+  },
+  {
+    key: "products",
+    path: CONSTANT_ROUTES.products,
+    name: "Products",
+    icon: ProductsIcon,
+    component: Products,
+    role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
+  },
+  {
+    key: "sales",
+    path: CONSTANT_ROUTES.sales,
+    name: "Sales",
+    icon: SalesIcon,
+    component: Sales,
+    role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
+  },
+  {
     key: "settings",
     name: "Settings",
     icon: SettingsIcon,
@@ -42,6 +70,13 @@ export const ProtectedRoutes: IRoute[] = [
         name: "Branding",
         icon: BrandingIcon,
         component: Branding,
+        role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
+      },
+      {
+        key: "staff",
+        path: CONSTANT_ROUTES.staff,
+        name: "Staff",
+        component: Staff,
         role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
       },
     ],

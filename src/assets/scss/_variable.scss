@@ -3,7 +3,6 @@
 // (stores/common/theme.store.ts). $primary-color is only the first-paint default (Ube),
 // used by the boot loader before the store's branding is known.
 $primary-color: #6a45b0;
-$secondary-color: #9a7fd6;
 
 // Theme-aware surfaces for hand-rolled (non-antd) UI, e.g. Tailwind `bg-[var(--amgc-bg-surface)]`.
 // Tinted with the store theme's hue (--amgc-hue) so neutrals sit with the brand color.

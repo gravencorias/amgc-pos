@@ -8,6 +8,8 @@ type States = {
   method: LoginMethod;
   pin: string;
   pinRejected: boolean;
+  // The floor lamp in the sign-in illustration.
+  lampOn: boolean;
 };
 
 type Actions = {
@@ -16,12 +18,14 @@ type Actions = {
   backspace: () => void;
   clearPin: () => void;
   setPinRejected: (pinRejected: boolean) => void;
+  toggleLamp: () => void;
 };
 
 const initialValues: States = {
   method: "pin",
   pin: "",
   pinRejected: false,
+  lampOn: true,
 };
 
 export const useLoginStore = create<States & Actions>()((set) => ({
@@ -32,4 +36,5 @@ export const useLoginStore = create<States & Actions>()((set) => ({
   backspace: () => set((state) => ({ pin: state.pin.slice(0, -1), pinRejected: false })),
   clearPin: () => set({ pin: "", pinRejected: false }),
   setPinRejected: (pinRejected) => set({ pinRejected }),
+  toggleLamp: () => set((state) => ({ lampOn: !state.lampOn })),
 }));

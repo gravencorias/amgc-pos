@@ -20,7 +20,9 @@ yarn lint
 | Cashier Ana | PIN | `1234` |
 | Cashier Ben | PIN | `5678` |
 
-Settings you save in the mock go to `mock/data/db.json`, which git ignores. Delete that file to start over.
+The mock starts with the prototype's sample menu (24 products in 6 categories) and a week of sample sales, so the Sales page has something to show.
+
+Everything you change goes to `mock/data/db.json`, which git ignores: settings, staff, the menu and sales. Delete that file to start over.
 
 ## Where things are
 

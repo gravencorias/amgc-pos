@@ -22,9 +22,57 @@
   }
 }
 
+// The collapse button, half over the Sider's right border and level with the store mark
+// (16px padding + half the 44px mark - half its own 28px = 24px).
+.amgc-sider-toggle {
+  position: absolute;
+  top: 24px;
+  right: -14px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--amgc-border);
+  border-radius: 50%;
+  background: var(--amgc-bg-surface);
+  color: var(--amgc-text-muted);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+
+  svg {
+    transition: transform 0.25s ease;
+  }
+  &.is-collapsed svg {
+    transform: rotate(180deg);
+  }
+  &:hover {
+    border-color: var(--amgc-primary);
+    background: var(--amgc-primary);
+    color: var(--amgc-on-primary);
+    transform: scale(1.08);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--amgc-primary);
+    outline-offset: 2px;
+  }
+}
+
 .amgc-menu .ant-menu-item,
 .amgc-menu .ant-menu-submenu-title {
   border-radius: 10px;
+}
+
+// A group's children (Settings → Store details, …) sit on the Sider's own surface,
+// not on antd's grey sub-menu panel. Five classes, to beat antd's four.
+.amgc-menu.ant-menu .ant-menu-sub.ant-menu-inline.ant-menu {
+  background: transparent;
 }
 
 // Items slide in one after another when the menu first renders.
@@ -42,5 +90,9 @@
 @media (prefers-reduced-motion: reduce) {
   .amgc-menu-item-slide {
     animation: none;
+  }
+  .amgc-sider-toggle,
+  .amgc-sider-toggle svg {
+    transition: none;
   }
 }

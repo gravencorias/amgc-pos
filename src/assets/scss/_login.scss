@@ -10,6 +10,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  // Text blocks only as wide as their text, so they don't cover the lamp.
+  align-items: flex-start;
   justify-content: space-between;
   gap: 32px;
   padding: clamp(28px, 5vw, 64px);
@@ -28,6 +30,86 @@
   }
   > * {
     position: relative;
+    z-index: 1;
+  }
+  // The bean bag scene sits bottom-right, under the store's name and the text. It grows
+  // with the panel, and the height cap keeps it clear of the name on wide, short screens.
+  > .amgc-login__art {
+    position: absolute;
+    z-index: 0;
+    right: 3%;
+    bottom: 3%;
+    width: min(58%, 68vh);
+    aspect-ratio: 1;
+    pointer-events: none;
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter: drop-shadow(0 24px 30px rgb(0 0 0 / 0.18));
+      transition: filter 0.45s ease;
+    }
+    &.is-lamp-off svg {
+      filter: drop-shadow(0 24px 30px rgb(0 0 0 / 0.18)) brightness(0.82);
+    }
+  }
+}
+
+// The floor lamp: click it, or focus it and press Enter or Space.
+.amgc-lounge__lamp {
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+
+  &:hover .amgc-lounge__shade {
+    filter: brightness(1.06);
+  }
+  &:active .amgc-lounge__chain {
+    transform: translateY(4px);
+  }
+  &:focus-visible .amgc-lounge__focus {
+    opacity: 1;
+  }
+}
+.amgc-lounge__chain {
+  transition: transform 0.12s ease;
+}
+.amgc-lounge__focus {
+  opacity: 0;
+}
+.amgc-lounge__light {
+  transition: opacity 0.45s ease;
+
+  .is-lamp-off & {
+    opacity: 0;
+  }
+}
+
+// The steam off the mug, rising and fading in turn.
+.amgc-art-steam__wisp {
+  opacity: 0;
+  animation: amgc-art-steam 4.2s ease-in-out infinite;
+
+  &:nth-child(2) {
+    animation-delay: 1.4s;
+  }
+  &:nth-child(3) {
+    animation-delay: 2.8s;
+  }
+}
+@keyframes amgc-art-steam {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  35% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-26px);
   }
 }
 
@@ -145,9 +227,20 @@
   color: var(--amgc-text-muted);
 }
 
+// Short windows: no room for the scene under the store's name.
+@media (max-height: 620px) {
+  .amgc-login__brand > .amgc-login__art {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   .amgc-login {
     grid-template-columns: 1fr;
+  }
+  // The brand panel becomes a slim header on small screens.
+  .amgc-login__brand > .amgc-login__art {
+    display: none;
   }
   .amgc-login__brand {
     flex-direction: row;
@@ -175,5 +268,15 @@
 @media (prefers-reduced-motion: reduce) {
   .amgc-pin__dots.is-rejected {
     animation: none;
+  }
+  .amgc-login__brand > .amgc-login__art svg,
+  .amgc-lounge__light,
+  .amgc-lounge__chain {
+    transition: none;
+  }
+  // Steam holds still, half visible.
+  .amgc-art-steam__wisp {
+    animation: none;
+    opacity: 0.45;
   }
 }

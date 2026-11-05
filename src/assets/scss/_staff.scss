@@ -1,0 +1,79 @@
+// Staff page: the table's row menu (react-contexify) and the role picker in the form.
+
+// The row menu follows the store's theme in light and dark mode.
+:root {
+  --contexify-menu-bgColor: var(--amgc-bg-surface);
+  --contexify-menu-shadow: 0 10px 30px rgb(0 0 0 / 0.16), 0 0 0 1px var(--amgc-border);
+  --contexify-menu-radius: 12px;
+  --contexify-separator-color: var(--amgc-border);
+  --contexify-item-color: var(--amgc-text-strong);
+  --contexify-activeItem-color: var(--amgc-on-primary);
+  --contexify-activeItem-bgColor: var(--amgc-primary);
+  --contexify-itemContent-padding: 8px 10px;
+}
+
+.amgc-row-menu {
+  min-width: 240px;
+}
+.amgc-row-menu__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+
+  &.is-danger {
+    color: #d4380d;
+  }
+}
+.contexify_item:not(.contexify_item-disabled):hover .amgc-row-menu__item.is-danger,
+.contexify_item:not(.contexify_item-disabled):focus .amgc-row-menu__item.is-danger {
+  color: inherit;
+}
+.amgc-row-menu__reason.ant-typography {
+  display: block;
+  max-width: 220px;
+  white-space: normal;
+  font-size: 12px;
+  color: var(--amgc-text-muted);
+}
+
+// Two big choices for the role, each with a one-line explanation.
+.amgc-role-picker.ant-radio-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+
+  .ant-radio-button-wrapper {
+    height: auto;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border-inline-start-width: 1px;
+    line-height: 1.35;
+
+    &::before {
+      display: none;
+    }
+    strong,
+    span:not(.ant-radio-button) {
+      display: block;
+    }
+    strong {
+      font-size: 15px;
+    }
+    span:not(.ant-radio-button) {
+      font-size: 12px;
+      color: var(--amgc-text-muted);
+      white-space: normal;
+    }
+  }
+  .ant-radio-button-wrapper-checked span:not(.ant-radio-button) {
+    color: inherit;
+  }
+}
+
+@media (max-width: 640px) {
+  .amgc-role-picker.ant-radio-group {
+    grid-template-columns: 1fr;
+  }
+}

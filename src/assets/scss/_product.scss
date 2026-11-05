@@ -1,0 +1,161 @@
+// Products page: product pictures, the photo drop zone, category chips and the managers' pickers.
+
+// A photo, or the category's icon on a soft tint of its hue (light and dark mode).
+.amgc-product-art {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  border-radius: 10px;
+  background: hsl(var(--ph) 45% 92%);
+  color: hsl(var(--ph) 40% 32%);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+[data-theme="dark"] .amgc-product-art {
+  background: hsl(var(--ph) 25% 20%);
+  color: hsl(var(--ph) 45% 78%);
+}
+
+.amgc-photo-drop.ant-upload-wrapper .ant-upload-drag {
+  padding: 0;
+  border-radius: 14px;
+  overflow: hidden;
+
+  .ant-upload-btn {
+    position: relative;
+    padding: 0;
+    display: block;
+  }
+  .amgc-product-art {
+    display: grid;
+    border-radius: 0;
+  }
+}
+.amgc-photo-drop__cta {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--amgc-bg-surface) 88%, transparent);
+  color: var(--amgc-text-strong);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+// Category filter pill (CategoryChip): the icon in a tinted circle, the name, a count badge.
+// Picked, the whole pill takes the brand color.
+.amgc-cat-chip.ant-tag-checkable {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  margin: 0;
+  padding: 0 8px 0 5px;
+  border: 1px solid var(--amgc-border);
+  border-radius: 999px;
+  background: var(--amgc-bg-surface);
+  color: var(--amgc-text-strong);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+
+  // antd wraps the children in one span; lay them out in a row.
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  &:hover:not(.ant-tag-checkable-checked) {
+    border-color: var(--amgc-primary);
+    background: color-mix(in srgb, var(--amgc-primary) 6%, var(--amgc-bg-surface));
+    color: var(--amgc-primary);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--amgc-primary);
+    outline-offset: 2px;
+  }
+}
+.amgc-cat-chip__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--amgc-primary) 12%, var(--amgc-bg-surface));
+  color: var(--amgc-primary);
+}
+.amgc-cat-chip__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--amgc-bg-subtle);
+  color: var(--amgc-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.amgc-cat-chip.ant-tag-checkable-checked {
+  border-color: var(--amgc-primary);
+  background: var(--amgc-primary);
+  color: var(--amgc-on-primary);
+
+  .amgc-cat-chip__icon,
+  .amgc-cat-chip__count {
+    background: color-mix(in srgb, var(--amgc-on-primary) 20%, transparent);
+    color: inherit;
+  }
+}
+
+.amgc-icon-picker.ant-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .ant-radio-button-wrapper {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 10px;
+    border-inline-start-width: 1px;
+
+    &::before {
+      display: none;
+    }
+    > span:last-child {
+      display: grid;
+      place-items: center;
+    }
+  }
+}
+
+.amgc-addon-checks.ant-checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px 12px;
+}
+
+.amgc-list-item--active.ant-list-item {
+  margin: 0 -8px;
+  padding-inline: 8px;
+  border-radius: 10px;
+  background: var(--amgc-bg-subtle);
+}

@@ -1,6 +1,7 @@
 import { Segmented, Typography } from "antd";
 import PinPad from "../../components/auth/PinPad";
 import PasswordLoginForm from "../../components/auth/PasswordLoginForm";
+import LoginLoungeIllustration from "../../components/auth/LoginLoungeIllustration";
 import { useLoginHook } from "../../hooks/auth/login.hook";
 import type { LoginMethod } from "../../stores/data/login.store";
 import { getInitials } from "../../utils/helpers";
@@ -24,6 +25,7 @@ const Login = () => {
           </p>
         </div>
         <p className="amgc-login__powered">Powered by AMGC POS</p>
+        <LoginLoungeIllustration lampOn={login.lampOn} onToggleLamp={login.toggleLamp} />
       </section>
 
       <section className="amgc-login__panel">

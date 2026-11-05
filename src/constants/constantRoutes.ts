@@ -5,6 +5,10 @@ export const CONSTANT_ROUTES = {
   login: "/login",
   // Module Routes
   home: "/",
+  register: "/register",
+  products: "/products",
+  sales: "/sales",
   storeDetails: "/settings/store",
   branding: "/settings/branding",
+  staff: "/settings/staff",
 } as const;
