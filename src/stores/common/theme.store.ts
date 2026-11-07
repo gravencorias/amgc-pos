@@ -68,6 +68,23 @@ const buildTheme = (branding: IBrandingTheme): { theme: ThemeConfig; mode: Theme
               colorBorderSecondary: `hsl(${hue} 12% 91%)`,
             }),
       },
+      components: {
+        // Toggles on a sunken, theme-tinted track, as the prototype's .seg. They follow the
+        // Corners setting: pills when rounded, otherwise the app's own radius (derived by antd).
+        // The border and label weight are in _segmented.scss.
+        Segmented: {
+          ...(branding.corners === CornerStyleEnum.rounded
+            ? { borderRadius: 999, borderRadiusLG: 999, borderRadiusSM: 999, borderRadiusXS: 999 }
+            : {}),
+          trackPadding: 3,
+          trackBg: isDark ? `hsl(${hue} 9% 8%)` : `hsl(${hue} 16% 93.5%)`,
+          itemColor: isDark ? `hsl(${hue} 8% 66%)` : `hsl(${hue} 8% 42%)`,
+          itemHoverColor: isDark ? `hsl(${hue} 15% 93%)` : `hsl(${hue} 20% 12%)`,
+          itemHoverBg: "transparent",
+          itemActiveBg: "transparent",
+          itemSelectedColor: isDark ? `hsl(${hue} 15% 93%)` : `hsl(${hue} 20% 12%)`,
+        },
+      },
     },
   };
 };

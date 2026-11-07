@@ -3,6 +3,7 @@ import { LockIcon, LogoutIcon, MenuIcon } from "../../assets/icons/Icons";
 import type { IStoreSettingsResponse } from "../../models/store-settings/store-settings.response.model";
 import { useAuthStore } from "../../stores/common/auth.store";
 import { useDrawerStore } from "../../stores/common/drawer.store";
+import useClock from "../../hooks/clock/clock.hook";
 import { checkIfManager } from "../../utils/roleChecker";
 import ProtectedSideNavigation from "./ProtectedSideNavigation";
 
@@ -16,6 +17,7 @@ const ProtectedTopHeading = ({ storeSettings }: IProps) => {
   const { userAccount, logout } = useAuthStore();
   const { showDrawer } = useDrawerStore();
   const isManager = checkIfManager(userAccount.tokenInfo?.accessLevels);
+  const currentTime = useClock();
 
   return (
     <div className="flex w-full items-center justify-between gap-4 border-0 border-b border-solid border-[var(--amgc-border)] bg-[var(--amgc-bg-surface)] px-5 py-3 md:px-8">
@@ -33,7 +35,9 @@ const ProtectedTopHeading = ({ storeSettings }: IProps) => {
           }
         />
         <Text className="truncate !text-[var(--amgc-text-muted)]">
-          {new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric" })}
+          {/* Philippine date and time; useClock re-renders each minute, so the date turns over at midnight too. */}
+          {new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", timeZone: "Asia/Manila" })}
+          {` · ${currentTime}`}
         </Text>
       </div>
 

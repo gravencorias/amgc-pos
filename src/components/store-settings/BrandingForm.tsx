@@ -39,6 +39,7 @@ const options = <T extends string>(labels: Record<T, string>) =>
 const BrandingForm = ({ form, storeSettings, preview, isDirty, isSaving, onFinish, onReset, logo }: IProps) => {
   const theme = Form.useWatch("theme", form);
   const customColor = Form.useWatch("customColor", form);
+  const mode = Form.useWatch("mode", form);
   const storeName = storeSettings?.storeName ?? "Your store";
 
   return (
@@ -58,7 +59,7 @@ const BrandingForm = ({ form, storeSettings, preview, isDirty, isSaving, onFinis
 
           <Card title="Theme">
             <Form.Item name="theme" className="!mb-0">
-              <ThemePicker customColor={customColor} />
+              <ThemePicker customColor={customColor} mode={mode} />
             </Form.Item>
             {theme === StoreThemeEnum.custom && (
               <Form.Item

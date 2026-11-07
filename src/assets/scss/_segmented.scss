@@ -1,0 +1,9 @@
+// antd Segmented, as the prototype's .seg. Shape and colors are component tokens in
+// stores/common/theme.store.ts; this adds what has no token. The doubled class outranks
+// antd's own .ant-segmented rule whichever stylesheet loads last.
+.ant-segmented.ant-segmented {
+  border: 1px solid var(--amgc-border);
+}
+.ant-segmented.ant-segmented .ant-segmented-item-label {
+  font-weight: 650;
+}
