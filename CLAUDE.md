@@ -62,6 +62,7 @@ Follow the `senior-frontend-dcwd-developer` skill. `D:\Repositories\dcwd_erp-hr-
 - **Roles** (`enums/user-role.enum.ts`): `P001` Owner, `P002` Manager, `P003` Cashier. The signed-in account's code is `tokenInfo.roles[].access` (also the JWT's role claim); there's no separate `accessLevels` list. Routes and `utils/roleChecker.ts` gate on it. Settings routes are limited to Owner and Manager. `View.tsx` shows `Forbidden` (403) if someone opens one by URL without the role.
 - **Branding drives the theme.** The store's settings set the brand color, light/dark mode, corners and text size. See "Theming" below.
 - **An offline screen.** `http_service.ts` writes to `connection.store` on every response; `common/status/OfflineScreen.tsx` reads it through `hooks/connection/connection.hook.ts` (ported from payroll). See "Offline screen" under Features.
+- **It also ships as an Android app.** The same code runs in a browser and inside a Capacitor shell (`android/`). The few differences are switches, not separate pages; see "Platforms" below and "Android tablet version".
 
 ## System architecture (frontend and backend)
 
@@ -73,11 +74,23 @@ AMGC POS is two repos that meet at one contract:
 | Backend | `D:\Repositories\amgc-pos-api` | ASP.NET Core 9, EF Core 9, PostgreSQL 17 | the source of truth: accounts, menu, pricing, numbering, days |
 | Contract | `docs/api-contract.md` (here) | | every route, payload, rule and status code |
 | Mock | `mock/mock-api.ts` (here) | Vite plugin | answers the contract during `yarn dev`; the quick reference for rules and messages |
+| Android app | `android/` (here) | Capacitor 7, Java | wraps this app for tablets: a copy of the built screens, plus Bluetooth printing (`ReceiptPrinterPlugin`) |
+| Packaging | `amgc-pos-api/deploy/` | PowerShell, Inno Setup, Gradle | builds the store's setup `.exe` and the APK from both repos at one version |
 
 **How a store runs it.** Each store installs its own copy on its own PC: PostgreSQL and `amgc-pos-api` run there as Windows services, on port 5000. PC registers open the app in a browser; Android tablets are extra registers on the store's Wi-Fi, in their browser or in the Android app (Capacitor, same code, the screens bundled in the APK). There's no cloud and no multi-tenancy: one install, one store, one database. The API serves this app's production build itself (from its `wwwroot`), so registers open `http://<server>:5000` and the app calls `/api` on the same address. A store gets one setup program, `AMGC-POS-Setup-<version>.exe` (or the same package as a zip), built by `amgc-pos-api/deploy/build-package.ps1`: it runs `yarn build` here (and builds the APK when the Android tools and signing key are on that PC), so `.env.production` must keep `VITE_API_URL=/api/` and `VITE_USE_MOCK_API=false` (the script checks). The setup asks for the owner's details and sets up PostgreSQL, the service, the firewall rule and nightly backups; running a newer one upgrades. See "Deployment" in `amgc-pos-api/CLAUDE.md`.
 
+**Who talks to the server:**
+
+| Client | Where its screens come from | How it reaches the API | Prints with |
+|---|---|---|---|
+| PC register (browser) | the server (`http://<server>:5000`) | same origin, `/api/` | the print dialog (`react-to-print`) |
+| Tablet in its browser | the server, opened from the QR code | same origin, `/api/` | the print dialog |
+| Tablet in the Android app | the APK (`http://localhost` inside the app) | the saved server address, `<server>/api/`, allowed by the API's CORS | Bluetooth ESC/POS, or the print dialog without a printer chosen |
+
+**One version for everything.** `build-package.ps1 -Version x.y.z` builds the API, this app (`VITE_APP_VERSION`) and the APK from the same commit, at the same version. Browsers always run the server's copy, so they can't fall behind. The APK carries its own copy, so after a store update every tablet needs the new APK: `system/version` tells the app, and its banner downloads the APK from the server.
+
 **A request, end to end:**
-1. A page's hook calls a `*.service.ts` method, which goes through `utils/http_service.ts` (Axios, `VITE_API_URL`, `Authorization: Bearer <hr_token>`).
+1. A page's hook calls a `*.service.ts` method, which goes through `utils/http_service.ts` (Axios, `Authorization: Bearer <hr_token>`). The base URL is `VITE_API_URL` (`/api/`) in a browser, and the saved server's `/api/` in the Android app (`applySavedServer()` in `main.tsx`).
 2. In the API, a thin controller (`Controllers/Main/POS/*`) calls one service method. The controller checks the route's role with `[AuthorizeRoles(...)]`; the service applies the finer rules (who may manage whom, a cashier's own sale from today) and returns `Result<T>`.
 3. `BaseController` turns the `Result` into the HTTP answer: 200 with the value; 400, 403 or 404 with `{ status, title, message, errors }`.
 4. The hook's `onError` shows the message in a toast, mostly through `getApiErrorMessage` (`errors[0].title`, then `message`).
@@ -89,10 +102,12 @@ AMGC POS is two repos that meet at one contract:
 - **Lists are `IPaginatedResult`** (`{ data, pageSize, currentPage, totalPages, totalCount }`). An empty page is 200 with `data: []`, never a 404.
 - **Uploaded images** (the logo, product photos) come back as absolute URLs built from the host the client used, so `localhost` on the server PC and `192.168.x.x` on a tablet both load. Upload with `requests.postForm`; the image goes in the `File` part.
 - **Past records don't change.** Staff are turned off, never deleted. A sale copies its item names, prices and cashier's name, so editing or deleting the menu never changes an old receipt. A void and a reopened Z reading stay on record with their status.
+- **The app's version matches the server's.** `system/version` (public) returns the package version (`dev` when the API runs in Development) and `androidAppPath` when the package carries an APK. The Android app compares it with `APP_VERSION` and never nags when either side is `dev`.
+- **The Android app's origin is `http://localhost`.** The API allows it through CORS (`Cors:AllowedOrigins`). Sign-in is a Bearer token, never a cookie, which is what makes that safe.
 
 **Backend layering** (details in `amgc-pos-api/CLAUDE.md`): five projects, `Common` ← `Domain` ← `Data` ← `Services`, with `API` on top, following the `senior-backend-dcwd-developer` skill. `Common` holds the request and response DTOs (field for field with `src/models/`), constants and helpers; `Domain` the EF entities; `Data` the `DataContext`, migrations, seeding and per-install keys; `Services` the business rules, validators and hand-written mappers (no AutoMapper); `API` the controllers, JWT auth and Swagger.
 
-**Changing the contract** touches four places together: `docs/api-contract.md`, the mock handler, the `*.service.ts` method here, and the route in `amgc-pos-api` (its DTO in `Common`, service, validator and controller).
+**Changing the contract** touches four places together: `docs/api-contract.md`, the mock handler, the `*.service.ts` method here, and the route in `amgc-pos-api` (its DTO in `Common`, service, validator and controller). A change that tablets need reaches them only in the next APK, so build and hand out a new package version.
 
 ## Architecture (frontend)
 
@@ -111,12 +126,32 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
 ### Boot and session
 
 - **Startup:**
-  - `main.tsx` → `App.tsx` → `View.tsx`. `App.tsx` sets up the QueryClient from `app.hook.ts` (60s `staleTime`, no retry, no refetch on focus) and the antd `ConfigProvider`, which takes its theme from `theme.store`.
-  - `view.hook.ts` calls `account/me` whenever a token exists. `LoadingScreen` (`common/screen/`) covers the app while it fetches, for at least 1.2s, then fades out. It shows a cup filling with coffee (`_loading.scss`). It uses the store's branding even though the settings haven't loaded: `theme.store` saves every `applyBranding` to localStorage (`amgc_branding`) and builds the first theme from it before the first render. Only a device's very first visit falls back to the Ube default.
+  - `main.tsx` → `App.tsx` → `View.tsx`. In the Android app, `main.tsx` first points axios at the saved store server (`applySavedServer()`), after the imports so it overrides the baseURL `http_service.ts` set when it loaded.
+  - `App.tsx` sets up the QueryClient from `app.hook.ts` (60s `staleTime`, no retry, no refetch on focus) and the antd `ConfigProvider`, which takes its theme from `theme.store` and `componentSize="large"` in touch mode. `app.hook.ts` also mirrors touch mode on `<html data-touch>`.
+  - `View.tsx`, in the Android app with no saved server (or after "Change"), shows only `ConnectServer`. Otherwise it renders the routes inside `LoadingScreen`, then `OfflineScreen` over everything, then the update banner when the app and server versions differ.
+  - `view.hook.ts` calls `account/me` whenever a token exists (and, in the app, a server is saved). `LoadingScreen` (`common/screen/`) covers the app while it fetches, for at least 1.2s, then fades out. It shows a cup filling with coffee (`_loading.scss`). It uses the store's branding even though the settings haven't loaded: `theme.store` saves every `applyBranding` to localStorage (`amgc_branding`) and builds the first theme from it before the first render. Only a device's very first visit falls back to the Ube default.
   - A real error response clears the token. A network failure or a service-down status (`serviceDownStatus`) keeps it.
   - `http_service.ts` handles 401s on its own.
 - **Sign-in:** both mutations end in `onSignedIn`. It only sets the token and navigates home. Setting the token enables the `get-me` query, which fills `auth.store.userAccount`, so the sign-in response isn't stored directly.
 - **Sign-out:** `auth.store.logout()` clears the token and does a full page load to `/login`. The full load is deliberate: it drops the previous user's query cache. Cashiers see this button as "Switch cashier" and owners and managers as "Sign out" (`checkIfManager` in `utils/roleChecker.ts`).
+
+### Platforms: browser, touch and the Android app
+
+Three independent switches, each read in one place. Pages don't fork; they ask.
+
+| Switch | Read with | True when | Changes |
+|---|---|---|---|
+| Touch mode | `useTouchMode()` in components, `isTouchMode()` elsewhere (`<html data-touch>`) | a coarse pointer, or the device setting says On | bigger targets, no keyboard hints, no auto-focus, the cash pad, steppers, the ⋯ row button (`_touch.scss`) |
+| Android app | `isNativeApp` (`utils/native.util.ts`, `Capacitor.isNativePlatform()`) | inside the APK | the Connect screen, the saved server, the update check, Bluetooth printing |
+| Bluetooth printer | `usePrinterStore().printer` with `isNativeApp` | the app with a printer chosen | Print sends ESC/POS (`useReceiptPrint`), and the drawer can open on cash sales |
+
+A browser tablet gets touch mode only. A PC gets none of them. The app on a tablet usually gets all three.
+
+### Settings: the store's or the device's
+
+- **The store's settings** live in the API (`store-settings`) and are the same on every register: name, receipt details, branding, receipt paper (`receiptWidth`).
+- **A device's settings** live in its localStorage and differ per register: touch mode (`amgc_touch_mode`), and in the app the store server (`amgc_server_url`), the receipt printer (`amgc_receipt_printer`) and the cash drawer option (`amgc_open_cash_drawer`). Each is a Zustand store in `stores/common/` (`device`, `server`, `printer`) that reads localStorage once at startup and writes through it, with every access in `try`/`catch`. The branding cache (`amgc_branding`) is the same idea. They're set on Settings → Devices ("This device"), except the server, which the Connect screen sets.
+- **Rule of thumb:** a setting that depends on the hardware in front of you (a touchscreen, a paired printer, which Wi-Fi address) is a device setting; anything a receipt or report shows is the store's.
 
 ### Routing and roles
 
@@ -182,6 +217,8 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
 **To run against the real API:** start `amgc-pos-api`, then set `VITE_API_URL=http://localhost:5000/api/` and `VITE_USE_MOCK_API=false` in `.env.development` (Vite restarts by itself). `.env` has the same URL, but `.env.development` and `.env.production` both override it, so change the mode-specific file. The API allows CORS from `http://localhost:5173` in Development. In production the API serves the built app itself, so `.env.production` keeps `/api/`. Client-side routes work on a full page load too: the API answers any non-API path with `index.html`.
 
 A new API route changes four things together: its row in `api-contract.md`, a handler in `mock-api.ts`, the matching `*.service.ts` method, and the route in `amgc-pos-api`.
+
+**The Android app can't use the mock**, which only lives inside `yarn dev` on `localhost`. To try an APK against a dev PC, the API has to listen on the LAN: start it with `dotnet run --project API --launch-profile http --urls http://0.0.0.0:5000` (Development otherwise pins `localhost`), allow port 5000 through the firewall, and connect the app to the PC's Wi-Fi address. A dev API reports version `dev`, so no update banner shows.
 
 ## Android tablet version (built; not yet tested on a real tablet)
 
