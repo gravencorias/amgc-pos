@@ -66,7 +66,7 @@ const RegisterOptionsForm = () => {
       </Form.Item>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Text className="!text-xs !text-[var(--amgc-text-muted)]">
+        <Text className="amgc-touch-hide !text-xs !text-[var(--amgc-text-muted)]">
           Number keys choose the size, + and − change the quantity, Enter adds.
         </Text>
         <Space>

@@ -12,4 +12,5 @@ export const CONSTANT_ROUTES = {
   storeDetails: "/settings/store",
   branding: "/settings/branding",
   staff: "/settings/staff",
+  devices: "/settings/devices",
 } as const;

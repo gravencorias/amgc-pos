@@ -11,6 +11,7 @@ export const toStoreSettingsRequest = (settings: IStoreSettingsResponse): IStore
   vatRegistered: settings.vatRegistered,
   receiptFooter: settings.receiptFooter,
   showLogoOnReceipt: settings.showLogoOnReceipt,
+  receiptWidth: settings.receiptWidth,
   theme: settings.theme,
   customColor: settings.customColor,
   mode: settings.mode,

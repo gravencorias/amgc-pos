@@ -18,12 +18,5 @@ export const NOTE_PRESETS: Record<CategoryIconEnum, string[]> = {
   [CategoryIconEnum.frozen]: ["In a cup"],
 };
 
-// An 80 mm thermal roll for react-to-print; the browser's print dialog sends it to the receipt printer.
-export const RECEIPT_PAGE_STYLE = `
-  @page { size: 80mm auto; margin: 3mm; }
-  body { margin: 0; }
-  .amgc-receipt { width: 100% !important; filter: none !important; -webkit-mask: none !important; mask: none !important; }
-`;
-
 // Quick-cash buttons offered on the payment screen (rounded up from the total).
 export const QUICK_CASH_STEPS = [50, 100, 500, 1000];

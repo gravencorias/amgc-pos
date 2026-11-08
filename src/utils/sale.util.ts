@@ -1,6 +1,7 @@
 import { QUICK_CASH_STEPS } from "../constants/constantReceipt";
 import type { ICartLine } from "../models/register/register.model";
 import type { ISaleTotals } from "../models/sale/sale.response.model";
+import { isTouchMode } from "./touch.util";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -51,8 +52,11 @@ export const quickCashAmounts = (total: number) =>
 
 // Back to the register's search after a dialog closes. Deferred because antd's Modal
 // returns focus to whatever opened it as it closes, which would win otherwise.
-export const focusRegisterSearch = () =>
+// Not in touch mode, where it would pop up the on-screen keyboard after every sale.
+export const focusRegisterSearch = () => {
+  if (isTouchMode()) return;
   window.setTimeout(() => document.getElementById("register-search")?.focus({ preventScroll: true }), 150);
+};
 
 export const peso = (value: number) =>
   "₱" + value.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

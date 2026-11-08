@@ -6,6 +6,7 @@ import StoreSettingsService from "../../services/store-settings.service";
 import type { IStoreDetailsFormValues } from "../../models/store-settings/store-settings.request.model";
 import type { IStoreSettingsResponse } from "../../models/store-settings/store-settings.response.model";
 import { Toast } from "../../utils/http_service";
+import { ReceiptWidthEnum } from "../../enums/receipt.enum";
 import { emptyToNull, toStoreSettingsRequest } from "../../utils/store-settings.util";
 import { PUBLIC_STORE_SETTINGS_KEY, STORE_SETTINGS_KEY, useStoreSettingsQuery } from "./store-settings.hook";
 
@@ -18,6 +19,7 @@ const toDetails = (values: Partial<IStoreDetailsFormValues>) => ({
   vatRegistered: !!values.vatRegistered,
   receiptFooter: emptyToNull(values.receiptFooter),
   showLogoOnReceipt: !!values.showLogoOnReceipt,
+  receiptWidth: values.receiptWidth ?? ReceiptWidthEnum.mm80,
 });
 
 export const useStoreDetailsFormHook = () => {
@@ -40,6 +42,7 @@ export const useStoreDetailsFormHook = () => {
       vatRegistered: data.vatRegistered,
       receiptFooter: data.receiptFooter,
       showLogoOnReceipt: data.showLogoOnReceipt,
+      receiptWidth: data.receiptWidth,
     });
   }, [data, form]);
 

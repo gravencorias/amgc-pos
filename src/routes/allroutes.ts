@@ -1,4 +1,4 @@
-import { BrandingIcon, CloseDayIcon, HomeIcon, ProductsIcon, RegisterIcon, SalesIcon, SettingsIcon } from "../assets/icons/Icons";
+import { BrandingIcon, CloseDayIcon, DevicesIcon, HomeIcon, ProductsIcon, RegisterIcon, SalesIcon, SettingsIcon } from "../assets/icons/Icons";
 import Sales from "../pages/sales/Sales";
 import CloseDay from "../pages/close-day/CloseDay";
 import Register from "../pages/register/Register";
@@ -10,6 +10,7 @@ import Home from "../pages/home/Home";
 import Branding from "../pages/store-settings/Branding";
 import StoreDetails from "../pages/store-settings/StoreDetails";
 import Staff from "../pages/staff/Staff";
+import Devices from "../pages/devices/Devices";
 import { CONSTANT_ROLES } from "../roles/contants.roles";
 
 export const PublicRoutes: IRoute[] = [
@@ -86,6 +87,14 @@ export const ProtectedRoutes: IRoute[] = [
         path: CONSTANT_ROUTES.staff,
         name: "Staff",
         component: Staff,
+        role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
+      },
+      {
+        key: "devices",
+        path: CONSTANT_ROUTES.devices,
+        name: "Devices",
+        icon: DevicesIcon,
+        component: Devices,
         role: [CONSTANT_ROLES.Owner, CONSTANT_ROLES.Manager],
       },
     ],

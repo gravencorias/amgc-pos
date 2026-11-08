@@ -10,6 +10,7 @@ import { useDrawerStore } from "../../stores/common/drawer.store";
 import { useModalStore } from "../../stores/common/modal.store";
 import { useRegisterStore } from "../../stores/data/register.store";
 import { showPopConfirmation, Toast } from "../../utils/http_service";
+import { isTouchMode } from "../../utils/touch.util";
 import { cartGross, cartLineKey, computeSaleTotals, normalizeSearch } from "../../utils/sale.util";
 import { useCategoriesQuery } from "../category/category.hook";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
@@ -55,7 +56,11 @@ export const useRegisterHook = () => {
   const totals = computeSaleTotals(cartGross(register.lines), !!register.discount, settings?.vatRegistered ?? true);
   const itemCount = register.lines.reduce((sum, l) => sum + l.qty, 0);
 
-  const focusSearch = () => searchRef.current?.focus({ preventScroll: true });
+  // Not in touch mode: focusing the box would pop up the on-screen keyboard after every sale.
+  // Tapping tiles and chips is how items are added there.
+  const focusSearch = () => {
+    if (!isTouchMode()) searchRef.current?.focus({ preventScroll: true });
+  };
   // Opening a dialog moves focus off the search box, so number keys and Enter reach the
   // dialog instead of being typed into the search behind it.
   const blurSearch = () => searchRef.current?.blur();
@@ -112,7 +117,9 @@ export const useRegisterHook = () => {
     }
     blurSearch();
     showModal({
-      properties: { open: true, centered: true, width: 560, title: modalTitle("Charge") },
+      // Wider in touch mode, where the number pad sits beside the cash fields so Complete sale
+      // stays on screen under a tablet browser's address bar.
+      properties: { open: true, centered: true, width: isTouchMode() ? 720 : 560, title: modalTitle("Charge") },
       body: <RegisterPaymentForm key={Date.now()} />,
     });
   };

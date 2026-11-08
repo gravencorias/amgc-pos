@@ -1,0 +1,158 @@
+// TOUCH MODE. hooks/touch/touch.hook.ts sets <html data-touch="true"> on tablets (or when the
+// device setting forces it); nothing here applies on a PC. antd's controls already switch to
+// their large size through ConfigProvider's componentSize; these rules cover the hand-rolled
+// parts: tap targets of 44 px and more, no keyboard hints, and a pressed look instead of hover.
+
+html[data-touch="true"] {
+  // Every keyboard shortcut also has a button, so the hints (F2, F9, Enter, 1-9...) and the
+  // Register's shortcut bar go. .amgc-touch-hide hides keyboard-only help text.
+  .amgc-kbd,
+  .amgc-register__keys,
+  .amgc-touch-hide {
+    display: none !important;
+  }
+  // Text shown only in touch mode (its keyboard twin carries .amgc-touch-hide).
+  .amgc-touch-only {
+    display: revert;
+  }
+
+  // Register: no arrow-key highlight on the grid, and a pressed look on tiles.
+  .amgc-tile.is-highlighted {
+    border-color: var(--amgc-border);
+    box-shadow: none;
+  }
+  .amgc-tile:active {
+    border-color: var(--amgc-primary);
+    transform: scale(0.98);
+  }
+  .amgc-tile:hover {
+    border-color: var(--amgc-border);
+  }
+
+  // Ticket: big round - / + and a clear Remove.
+  .amgc-qty {
+    gap: 4px;
+
+    .ant-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+    }
+    > span {
+      min-width: 32px;
+      font-size: 17px;
+    }
+  }
+  .amgc-ticket__line {
+    padding: 12px;
+
+    &:hover {
+      background: transparent;
+    }
+    &.is-selected {
+      background: transparent;
+    }
+    .amgc-ticket__remove.ant-btn {
+      height: 44px;
+      padding-inline: 14px;
+    }
+  }
+
+  // Size and add-ons picker: taller choices.
+  .amgc-choice-group.ant-radio-group .ant-radio-button-wrapper {
+    min-height: 64px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    strong {
+      font-size: 16px;
+    }
+  }
+  .amgc-addon-checks .ant-checkbox-wrapper,
+  .amgc-note-chips.ant-checkbox-group .ant-checkbox-wrapper {
+    min-height: 44px;
+    align-items: center;
+  }
+  .amgc-note-chips.ant-checkbox-group .ant-checkbox-wrapper {
+    padding: 8px 16px;
+  }
+
+  // Void reasons.
+  .amgc-reason-chip.ant-tag-checkable {
+    padding: 10px 16px;
+    font-size: 15px;
+  }
+
+  // Close day: the count gets - / + buttons around each box.
+  .amgc-cash-count__row {
+    grid-template-columns: 52px 10px auto minmax(70px, 1fr);
+  }
+
+  // Tables: taller rows. Row menus (react-contexify): taller items.
+  .ant-table-tbody > tr > td {
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+  .contexify_item .contexify_itemContent {
+    min-height: 44px;
+  }
+
+  // Side menu: taller items.
+  .ant-menu-item,
+  .ant-menu-submenu-title {
+    height: 48px !important;
+    line-height: 48px !important;
+  }
+}
+
+// Hidden unless touch mode is on.
+.amgc-touch-only {
+  display: none;
+}
+
+// The on-screen number pad for cash received (RegisterPaymentForm in touch mode).
+// Touch mode's Charge dialog: cash fields on the left, the number pad on the right.
+.amgc-payment-cash.is-touch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+
+  .amgc-cash-pad {
+    margin-bottom: 0;
+  }
+}
+
+.amgc-cash-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+
+  .ant-btn {
+    height: 56px;
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+  .amgc-cash-pad__quiet.ant-btn {
+    font-size: 1rem;
+    color: var(--amgc-text-muted);
+  }
+}
+
+// Close day's - / + around a count box.
+.amgc-cash-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .ant-input-number {
+    width: 64px !important;
+  }
+  .ant-btn {
+    width: 44px;
+    height: 44px;
+  }
+}

@@ -100,6 +100,7 @@ const Staff = () => {
           myId={staff.myId}
           menuStaff={staff.menuStaff}
           setMenuStaff={staff.setMenuStaff}
+          isTouch={staff.isTouch}
           permissionsFor={staff.permissionsFor}
           onTableChange={staff.onTableChange}
           onEdit={handleEdit}

@@ -7,6 +7,7 @@ import type { IDayReopenFormValues } from "../../models/day-close/day-close.requ
 import type { IDayCloseResponse } from "../../models/day-close/day-close.response.model";
 import { DAY_CLOSE_CURRENT_KEY, DAY_CLOSE_LIST_KEY, DAY_CLOSE_TODAY_KEY } from "../../constants/constantQueryKeys";
 import { Toast } from "../../utils/http_service";
+import { isTouchMode } from "../../utils/touch.util";
 import { getApiErrorMessage } from "../../utils/helpers";
 import { formatLongDate } from "../../utils/date.util";
 
@@ -28,7 +29,9 @@ export const useDayReopenFormHook = ({ dayClose, onBack, onReopened }: IDayReope
   }, [form]);
 
   // antd's Modal takes focus as it opens, which beats autoFocus, so focus the box once it has.
+  // Not in touch mode, where the on-screen keyboard would cover the dialog; a tap on the box opens it.
   useEffect(() => {
+    if (isTouchMode()) return;
     const id = window.setTimeout(() => document.querySelector<HTMLTextAreaElement>(".ant-modal textarea.amgc-focus-first")?.focus(), 120);
     return () => window.clearTimeout(id);
   }, []);

@@ -1,0 +1,38 @@
+// Settings > Devices
+.amgc-devices__steps {
+  flex: 1 1 240px;
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--amgc-text-strong);
+  line-height: 1.5;
+}
+
+.amgc-devices__label {
+  margin-bottom: 6px;
+  font-size: 0.875em;
+  color: var(--amgc-text-muted);
+}
+
+.amgc-devices__url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.125em;
+  font-weight: 600;
+}
+
+.amgc-devices__note {
+  margin: 0;
+  color: var(--amgc-text-muted);
+  font-size: 0.875em;
+}
+
+.amgc-devices__list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.45;
+}

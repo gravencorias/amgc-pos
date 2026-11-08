@@ -1,3 +1,4 @@
+import type { ReceiptWidthEnum } from "../../enums/receipt.enum";
 import type { CornerStyleEnum, StoreThemeEnum, TextSizeEnum, ThemeModeEnum } from "../../enums/branding.enum";
 
 // The look of the register. Shared by the full settings and the public (signed-out) view.
@@ -17,6 +18,7 @@ export interface IStoreSettingsResponse extends IBrandingTheme {
   vatRegistered: boolean;
   receiptFooter: string | null;
   showLogoOnReceipt: boolean;
+  receiptWidth: ReceiptWidthEnum;
   logoUrl: string | null;
   updatedAt: string;
 }

@@ -4,7 +4,7 @@ import { useModalStore } from "../../stores/common/modal.store";
 import { useRegisterStore } from "../../stores/data/register.store";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
 import { focusRegisterSearch } from "../../utils/sale.util";
-import { RECEIPT_PAGE_STYLE } from "../../constants/constantReceipt";
+import { receiptPageStyle } from "../../utils/receipt.util";
 
 export const useReceiptHook = () => {
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -14,7 +14,7 @@ export const useReceiptHook = () => {
 
   const print = useReactToPrint({
     contentRef: receiptRef,
-    pageStyle: RECEIPT_PAGE_STYLE,
+    pageStyle: receiptPageStyle(settings?.receiptWidth),
     documentTitle: lastSale ? `Receipt ${lastSale.receiptNumber}` : "Receipt",
   });
 

@@ -1,4 +1,5 @@
 import { Button, Card, Form, Input, InputNumber, Typography, type FormInstance } from "antd";
+import { MinusIcon, PlusIcon } from "../../assets/icons/Icons";
 import { CASH_DENOMINATIONS } from "../../constants/constantCash";
 import type { IDayCloseFormValues } from "../../models/day-close/day-close.request.model";
 import { peso } from "../../utils/sale.util";
@@ -14,6 +15,9 @@ interface IProps {
   overShort: number;
   isToday: boolean;
   isClosing: boolean;
+  // Touch mode: - / + beside each box, so counting a stack is taps rather than typing.
+  isTouch: boolean;
+  onStep: (denomination: string, delta: number) => void;
   onFinish: (values: IDayCloseFormValues) => void;
 }
 
@@ -27,6 +31,8 @@ const CashCountForm = ({
   overShort,
   isToday,
   isClosing,
+  isTouch,
+  onStep,
   onFinish,
 }: IProps) => {
   const balance = overShort === 0 ? "is-even" : overShort > 0 ? "is-over" : "is-short";
@@ -55,9 +61,38 @@ const CashCountForm = ({
                 <span className="amgc-cash-count__times" aria-hidden="true">
                   ×
                 </span>
-                <Form.Item name={["counts", String(d.value)]} noStyle>
-                  <InputNumber min={0} precision={0} controls={false} placeholder="0" aria-label={`Number of ${d.label}`} />
-                </Form.Item>
+                {isTouch ? (
+                  <span className="amgc-cash-step">
+                    <Button
+                      aria-label={`One less ${d.label}`}
+                      icon={<MinusIcon size={16} />}
+                      disabled={!qty}
+                      onClick={() => onStep(String(d.value), -1)}
+                    />
+                    <Form.Item name={["counts", String(d.value)]} noStyle>
+                      <InputNumber
+                        min={0}
+                        precision={0}
+                        controls={false}
+                        placeholder="0"
+                        inputMode="numeric"
+                        aria-label={`Number of ${d.label}`}
+                      />
+                    </Form.Item>
+                    <Button aria-label={`One more ${d.label}`} icon={<PlusIcon size={16} />} onClick={() => onStep(String(d.value), 1)} />
+                  </span>
+                ) : (
+                  <Form.Item name={["counts", String(d.value)]} noStyle>
+                    <InputNumber
+                      min={0}
+                      precision={0}
+                      controls={false}
+                      placeholder="0"
+                      inputMode="numeric"
+                      aria-label={`Number of ${d.label}`}
+                    />
+                  </Form.Item>
+                )}
                 <span className="amgc-cash-count__amount tabular-nums">{qty ? peso(d.value * qty) : ""}</span>
               </div>
             );

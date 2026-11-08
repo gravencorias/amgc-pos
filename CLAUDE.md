@@ -60,7 +60,7 @@ Follow the `senior-frontend-dcwd-developer` skill. `D:\Repositories\dcwd_erp-hr-
   - There's no Unauthorized branch.
 - **Roles** (`enums/user-role.enum.ts`): `P001` Owner, `P002` Manager, `P003` Cashier. The signed-in account's code is `tokenInfo.roles[].access` (also the JWT's role claim); there's no separate `accessLevels` list. Routes and `utils/roleChecker.ts` gate on it. Settings routes are limited to Owner and Manager. `View.tsx` shows `Forbidden` (403) if someone opens one by URL without the role.
 - **Branding drives the theme.** The store's settings set the brand color, light/dark mode, corners and text size. See "Theming" below.
-- **No offline screen yet.** `http_service.ts` writes to `connection.store` on every response, but nothing reads it here. The store's comment mentions `common/status/OfflineScreen.tsx`, which this repo doesn't have yet.
+- **An offline screen.** `http_service.ts` writes to `connection.store` on every response; `common/status/OfflineScreen.tsx` reads it through `hooks/connection/connection.hook.ts` (ported from payroll). See "Offline screen" under Features.
 
 ## System architecture (frontend and backend)
 
@@ -182,13 +182,15 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
 
 A new API route changes four things together: its row in `api-contract.md`, a handler in `mock-api.ts`, the matching `*.service.ts` method, and the route in `amgc-pos-api`.
 
-## Android tablet version (planned, not started)
+## Android tablet version (Phase 1 built; the Android app isn't started)
 
 **Decided:** the tablet version has **all the same features** as the PC app, and it lives **in this repo**, not a separate project. A feature is built once, and both get it; the tablet differences are a touch switch and a printing switch. **Pairing by QR code** is part of it (step 1).
 
 The plan is to ship this same React app as an Android app with **Capacitor**, not a rewrite. The `android/` folder lives in this repo, and about 95% of the code is shared. Tablets are extra registers, talking over Wi-Fi to the store's own `amgc-pos-api` on a PC or mini-PC. Data stays on the store's server, as with PC registers, and a store can mix PCs and tablets. A tablet-only store (no PC) would need a cloud API or an on-device database; that's out of scope.
 
 **Target:** a 10-inch tablet in landscape. The two-panel Register already fits at about 1280×800. Phones need a one-column layout; leave that for later, or for manager reports only.
+
+**Phase 1, built: tablets as browser registers.** No app to install yet. A tablet on the store's Wi-Fi scans the QR code on **Settings → Devices** with its camera, which opens the app in its browser (`http://<server>:5000`), and signs in as usual. Phase 1 added touch mode, the offline screen, Settings → Devices with `GET system/server-info`, and the 58 mm receipt setting (see Features). Printing is still the browser's print dialog (`react-to-print`), so a Bluetooth printer only works if the tablet's own print service can reach it; direct ESC/POS printing is step 3.
 
 **Ready to start:** `amgc-pos-api` exists. A tablet can reach it over Wi-Fi once it listens on the LAN: its production settings already listen on `http://0.0.0.0:5000`, while Development pins `localhost`. The mock only runs inside `yarn dev`, so it's no use to an installed APK.
 
@@ -208,32 +210,17 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
      - **Apply it** by setting `axios.defaults.baseURL` at startup, outside `http_service.ts`, which stays verbatim.
      - **Change it later** through a "Change server" link on the sign-in screen.
    - **QR pairing, the PC side.** Add a **Settings → Devices** page (Owner and Manager) that shows a QR code for tablets to scan.
-     - **The QR holds only the address, never a token,** so scanning it doesn't sign anyone in. Tablets still sign in with a PIN or password. Format: `amgcpos://connect?api=http%3A%2F%2F192.168.1.10%3A5000%2Fapi%2F&store=Allia%27s%20Caf%C3%A9`.
-     - **The API supplies the address.** A browser on the server PC often opens the app as `localhost`, so it can't know the LAN address itself. So `amgc-pos-api` needs a route, e.g. `GET system/server-info`, that returns the server's LAN address(es) and port. Add it to `api-contract.md`, the mock and a service.
-     - **More than one address:** if the server has several (Wi-Fi and cable), let the owner pick which one the QR shows.
-     - **Libraries:** draw the QR with a QR library (e.g. `qrcode.react`), and scan it on the tablet with a Capacitor barcode-scanning plugin (camera).
+     - **Built in Phase 1.** The page exists (`pages/devices/Devices.tsx`, `devices.hook.ts`).
+     - **The QR holds only the address, never a token,** so scanning it doesn't sign anyone in. Tablets still sign in with a PIN or password. Format: the plain web URL, `http://192.168.1.10:5000`, so a phone or tablet camera opens it in the browser. The app's scanner reads the same code and adds `/api/` for its `baseURL`. This replaced an earlier `amgcpos://connect?...` plan, which only the app could open.
+     - **The API supplies the address** (`GET system/server-info`, in the contract). A browser on the server PC often opens the app as `localhost`, so it can't know the LAN address itself.
+     - **More than one address:** the owner picks which one the QR shows (`devices.store.selectedAddress`).
+     - **Libraries:** antd's built-in `QRCode` draws it. The app will scan it with a Capacitor barcode-scanning plugin (camera).
    - **Store setup checklist:** reserve a fixed LAN address for the server PC in the router (a DHCP reservation). Otherwise the address can change after a router restart, and every tablet loses the server.
-2. **Touch-first screens.** The app is keyboard-and-mouse first. On touch, the same pages adjust; there's no separate tablet page.
-   - **Detecting touch:** a `useSyncExternalStore` hook like `window.size.hook.ts` (`pointer: coarse`). On a PC nothing changes.
-   - **Everywhere:**
-     - Tap targets of at least 44–48 px.
-     - Visible labels instead of hover-only tooltips.
-     - A visible **⋯** button on rows that today rely on a react-contexify right-click menu (Products, Staff).
-     - A pressed state instead of hover.
-   - **Register:**
-     - **Keys:** hide `RegisterShortcutBar` and the F-key hints. Every shortcut already has a button: make them bigger.
-     - **Search:** **don't auto-focus it**, or the on-screen keyboard pops up after every sale. Tapping tiles and chips is the main way to add items.
-     - **The ticket:** large round − / + steppers and a clear Remove button. Hide the arrow-key grid highlight.
-   - **Charge:** an on-screen **number pad** (like `PinPad`, with 00 and backspace) for cash received, plus bigger quick-cash buttons. That keeps the Android keyboard from covering the dialog.
-   - **Size and add-ons picker:** taller choice buttons. Hide the 1–9 hints.
-   - **Other forms:**
-     - **Close day count:** `inputMode="numeric"` on the boxes, optionally with + / − per denomination.
-     - **Void and reopen:** bigger reason chips.
-     - **Tables:** taller rows.
+2. **Touch-first screens. Built in Phase 1:** see "Touch mode" under Features. Not done: replacing hover-only tooltips with visible labels, where a page still has them.
 3. **Printing to Bluetooth thermal printers (ESC/POS).**
    - **Why:** `react-to-print` uses the system print dialog, which doesn't fit a counter. Common PH printers (Xprinter, GOOJPRT, Rongta; 58 mm or 80 mm) take raw ESC/POS bytes over Bluetooth.
    - **How:** a Capacitor Bluetooth printer plugin, plus a `utils/escpos.ts` that turns a sale, a Z reading or a void into ESC/POS text lines. Reuse the data `SaleReceipt` and `ZReading` print; the React components stay for the screen and for PC printing.
-   - **Printer setup:** pair once in Settings, and save the printer's address and paper width (58 mm is 32 characters a line, 80 mm is 48).
+   - **Printer setup:** pair once in Settings and save the printer's address on the device. The paper width is already a store setting (`receiptWidth`: 58 mm is 32 characters a line, 80 mm is 48).
    - **Cash drawer:** the drawer kick command goes through the printer, sent on a cash sale.
    - **Fallback:** the PC web app keeps `react-to-print`. Pick the path by platform (`Capacitor.isNativePlatform()`).
 4. **Android settings:**
@@ -248,7 +235,19 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
 
 - **Login:** a PIN pad that works from the keyboard (digits, Backspace, Escape, Enter), and a password form. The brand panel has an SVG illustration (`LoginLoungeIllustration`) whose bean bag and mug take the brand color. Its floor lamp switches on and off by click, Enter or Space (`login.store.lampOn`); the lamp's key handler stops the event so Enter doesn't also submit the PIN.
 - **Home:** a greeting and an "Open the register" button for everyone. Owners and managers also get the setup checklist (`SetupChecklist`) and a "Today so far" card (`TodaySnapshot`, see Sales). Cashiers get a short "Ready to sell" card instead.
-- **Settings → Store details:** name, tagline, address, TIN, VAT registration and receipt footer, with a live receipt preview.
+- **Settings → Store details:** name, tagline, address, TIN, VAT registration, receipt footer and **receipt paper** (`receiptWidth`, 80 or 58 mm, `enums/receipt.enum.ts`), with a live receipt preview.
+  - **Receipt paper** applies to every receipt and Z reading: `utils/receipt.util.ts` gives `.amgc-receipt` an `is-58mm` class (narrower on screen, a size smaller) and react-to-print the matching `@page` size (`receiptPageStyle`).
+  - **In a dialog, a long receipt scrolls inside its stage** on screens under 900px tall, so Print, Void and Start next order stay in view (`_store-settings.scss`).
+- **Settings → Devices** (Owner and Manager): a QR code of this server's web address for tablets to scan, the address to type instead (copyable), a picker when the PC has more than one network, and a reminder to reserve the address in the router. It reads `system/server-info` (`SERVER_INFO_KEY`, never stale; Refresh refetches). The mock lists the dev PC's addresses with Vite's port, skipping virtual adapters by name. The page also holds **This device**: the touch mode setting.
+- **Touch mode** (tablets): bigger targets, no keyboard hints, and no focus grabbing that would raise the on-screen keyboard. On a PC nothing changes.
+  - **When:** `useTouchMode()` (`hooks/touch/touch.hook.ts`) is `(pointer: coarse)` through `useSyncExternalStore`, or the device's override: Auto, On or Off, saved in localStorage (`amgc_touch_mode`, `stores/common/device.store.ts`) and set on Settings → Devices.
+  - **How it applies:** `app.hook.ts` mirrors it on `<html data-touch="true">` and sets antd's `componentSize="large"`. `_touch.scss` (the last partial) holds the CSS: `.amgc-touch-hide` / `.amgc-touch-only`, tile pressed state, 44px − / + and Remove, taller choice buttons and chips, padded table rows, bigger menu and context-menu items. Code outside components asks `isTouchMode()` (`utils/touch.util.ts`), which reads the attribute.
+  - **Register:** no shortcut bar or F-key and 1–9 hints, and the search box never focuses itself (`focusSearch`, `focusRegisterSearch`). Charge is wider (720px) with `CashPad` (1–9, 00, 0, backspace; `pressCashKey`) beside the cash fields, and the cash box has `inputMode="none"` so the Android keyboard stays down.
+  - **Elsewhere:** the void and reopen forms don't focus their first field. The cash count gets − / + per denomination (`stepCount`) and `inputMode="numeric"`. Products and Staff get a pinned **⋯** column that opens the same row menu.
+- **Offline screen** (`common/status/OfflineScreen.tsx`, `_offline.scss`): mounted in `View.tsx` outside the routes and the loading screen, so it covers any page. Three versions: the device is offline (browser event), the server isn't answering (a request got no response), or the server says it's down (502 / 503).
+  - **The page underneath stays mounted,** so the order on the Register is kept.
+  - **Recovery:** Try again, the browser's `online` event, and a quiet check every 20s all probe `store-settings/public` with a separate axios instance (no token, so no 401 handling). Success refetches the active queries and clears the screen. The probe uses `axios.defaults.baseURL`, so it will follow the saved store server in the Android app.
+  - **No offline sales:** the server numbers and saves every sale, so Charge can't complete until it's back. An offline queue is in "Later".
 - **Settings → Branding:** logo upload, theme presets or a custom color, light/dark/auto, corners and text size, with a live register preview.
 - **Register** (every role): the keyboard-first checkout.
   - **Menu:** the menu grid (`product/all`, `PRODUCT_ALL_KEY`) with category chips and a search box. The chips are one scrolling row that fades at the right edge, and a vertical mouse wheel scrolls it sideways.
@@ -258,7 +257,7 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
   - **Focus in modals:** antd's Modal takes focus as it opens, which beats `autoFocus`. A form that should start in a field focuses it about 120ms later in an effect. The payment form uses `.amgc-payment-focus`, and the void and reopen forms use `.amgc-focus-first`.
   - **Modals:** each one gets a `key={Date.now()}` body so it remounts with fresh defaults. Opening one blurs the search box first, otherwise number keys and Enter would go into the search. Closing one calls `focusRegisterSearch()`, which is deferred because antd returns focus to whatever opened the modal.
   - **Size and add-ons picker** (`register-options.form.hook.ts`): 1–9 choose the size.
-  - **Payment** (`register-payment.form.hook.tsx`): cash with quick amounts and change, GCash or Maya, or card with a reference. It posts `sale/create`. On success it clears the order and swaps the modal body to `SaleReceiptPanel`, which has print (`react-to-print`, 80 mm), Enter for the next order, and **Void** (see Voids). `showReceipt` and `showVoid` are module-level in that file and read the stores with `getState()`, because the payment form unmounts as soon as the receipt replaces it.
+  - **Payment** (`register-payment.form.hook.tsx`): cash with quick amounts and change, GCash or Maya, or card with a reference. It posts `sale/create`. On success it clears the order and swaps the modal body to `SaleReceiptPanel`, which has print (`react-to-print`, on the store's receipt paper), Enter for the next order, and **Void** (see Voids). `showReceipt` and `showVoid` are module-level in that file and read the stores with `getState()`, because the payment form unmounts as soon as the receipt replaces it.
   - **The server prices the sale.** The register's totals (`computeSaleTotals` in `utils/sale.util.ts`, Philippine VAT and the senior citizen / PWD rules) are for display only. The receipt prints the server's figures.
   - **Receipt:** `SaleReceipt` reuses the `.amgc-receipt` styles from the Store details preview. It ends with `RECEIPT_DISCLAIMER` until BIR accreditation.
 - **Sales** (Owner and Manager): one day's report.
@@ -275,7 +274,7 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
 - **Close day** (Owner and Manager): end-of-day cash count and Z reading, at `/close-day`.
   - **One day at a time.** `day-close/current` picks the day that's due: an earlier day with sales that was never closed, otherwise today. The page shows that day's figures (`DayFigures`) and the count (`CashCountForm`). Once it's closed, the page shows a "closed" card with its Z reading. There's no day picker, because closings must go in date order.
   - **The count:** starting float, prefilled from the last closing, plus quantities per denomination (`constants/constantCash.ts`, ₱1,000 down to 25¢). `close-day.hook.tsx` works out counted, expected (float + cash sales) and over/short live with `Form.useWatch`. The form's `counts` is keyed by denomination string ("1000", "0.25"). The server recomputes everything when it saves.
-  - **Closing** asks for confirmation through `showPopConfirmation`, then saves. The new Z reading opens in the modal (`ZReadingView` → `ZReading`, 80 mm, in the sale receipt's `.amgc-receipt` styles). It has the cash count, over/short, and the old and new grand totals (BIR's accumulated grand total).
+  - **Closing** asks for confirmation through `showPopConfirmation`, then saves. The new Z reading opens in the modal (`ZReadingView` → `ZReading`, on the store's receipt paper, in the sale receipt's `.amgc-receipt` styles). It has the cash count, over/short, and the old and new grand totals (BIR's accumulated grand total).
   - **A closed day is final.** The API refuses new sales while today is closed, and voids on any closed day.
   - **The Register knows.** `register.hook.tsx` reads `day-close/today` (`DAY_CLOSE_TODAY_KEY`), which cashiers can read too. It refetches every 60s, because the day is often closed from another computer. Once closed, the ticket shows a "Today is closed" note with the Z number, time and who closed it. Charge reads "Closed for today" and is disabled, and F9 shows a toast. Adding items still works. Closing the day and a failed `sale/create` both invalidate the key.
   - **Past closings** (`DayCloseTable`): newest first. A row opens its Z reading to reprint.
@@ -288,14 +287,14 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
   - **Keys:** `DAY_CLOSE_CURRENT_KEY` and `DAY_CLOSE_LIST_KEY`. A sale or a void also invalidates `DAY_CLOSE_CURRENT_KEY`, because the open day's figures change.
   - **Mock:** sample closings are created for every past day with sales, so only today is open. Each one balances, with a ₱2,000 float.
 - **Products** (Owner and Manager): the menu, with categories and add-ons.
-  - **Table:** a paged table with category chips (the same `CategoryChip`, wrapping), a sold-out filter and a search. Each row has an "On the menu" switch and a react-contexify menu (Edit, Mark sold out, Delete). The page calls only `product.hook.ts`.
+  - **Table:** a paged table with category chips (the same `CategoryChip`, wrapping), a sold-out filter and a search. Each row has an "On the menu" switch and a react-contexify menu (Edit, Mark sold out, Delete), opened by clicking the row (or the ⋯ in touch mode). The page calls only `product.hook.ts`.
   - **Form:** one modal form for add and edit (`product.form.hook.ts`). It covers name, category, one price or up to 4 sizes (`Form.List`), add-ons and availability.
   - **Photo:** cropped to 480×480 in the browser and kept in `product.store.pendingPhoto` until the product saves. Then it's uploaded with `postForm`, so a new product gets its photo in the same step. A failed photo upload only warns; the product is already saved.
   - **Categories and add-ons:** each is edited in the global Drawer (`CategoryManager`, `AddOnManager`), with an inline form above its list. Every category has an icon (`enums/product.enum.ts`), which `ProductArt` shows for products without a photo.
   - **Shared query keys:** `constants/constantQueryKeys.ts` holds `CATEGORIES_KEY`, `ADD_ONS_KEY` and `PRODUCT_LIST_KEY`, so the three hooks can invalidate each other without importing each other. `SelectCategory` (`components/common/selects/`) reuses `CATEGORIES_KEY`.
   - **Who can do what:** cashiers can read the menu, because the Register will need it. Changing it is limited to owners and managers by the route `role` and by the API.
 - **Settings → Staff:** add cashiers (PIN) and managers (username and password), edit names, reset a PIN or password, and turn accounts off or back on. Nothing is ever deleted, so past sales keep their names. This is the flat-CRUD shape:
-  - a paged table (`staff.hook.ts`) with a react-contexify row menu
+  - a paged table (`staff.hook.ts`) with a react-contexify row menu, opened by clicking the row (or the ⋯ in touch mode)
   - one form for add and edit, keyed off `editingStaff` (`staff.form.hook.ts`)
   - a separate reset form, keyed off `credentialStaff` (`staff-credential.form.hook.ts`)
 
@@ -304,6 +303,6 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
 Everything in the prototype is built, plus voids and closing the day, and `amgc-pos-api` answers all of it. Likely next steps:
 - partial refunds (single items) if stores ask for them
 - BIR accreditation fields on receipts
-- the Android tablet version (above)
+- the Android tablet app (above): Phase 1 runs tablets in the browser; next are the store-server screen, ESC/POS Bluetooth printing and the Android settings
 - a full test install on a spare PC or VM (registering the service, firewall rule and backup task hasn't been run yet)
-- an offline screen (`connection.store` is already fed by `http_service.ts`)
+- testing Phase 1 on a real tablet over the store's Wi-Fi (checked so far in a desktop browser at tablet sizes with touch mode forced on)

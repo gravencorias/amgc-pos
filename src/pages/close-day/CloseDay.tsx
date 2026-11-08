@@ -71,6 +71,8 @@ const CloseDay = () => {
               <CashCountForm
                 form={day.form}
                 counts={day.counts}
+                isTouch={day.isTouch}
+                onStep={day.stepCount}
                 cashSales={current.figures.cashSales}
                 expectedCash={day.expectedCash}
                 countedCash={day.countedCash}

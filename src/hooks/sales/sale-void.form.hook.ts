@@ -9,6 +9,7 @@ import { DAY_CLOSE_CURRENT_KEY, SALE_LIST_KEY, SALE_SUMMARY_KEY } from "../../co
 import { useAuthStore } from "../../stores/common/auth.store";
 import { checkIfManager } from "../../utils/roleChecker";
 import { Toast } from "../../utils/http_service";
+import { isTouchMode } from "../../utils/touch.util";
 import { getApiErrorMessage } from "../../utils/helpers";
 
 export interface ISaleVoidFormProps {
@@ -34,7 +35,9 @@ export const useSaleVoidFormHook = ({ sale, onBack, onVoided }: ISaleVoidFormPro
   }, [form]);
 
   // antd's Modal takes focus as it opens, which beats autoFocus, so focus the box once it has.
+  // Not in touch mode: the reason chips come first there, without the on-screen keyboard.
   useEffect(() => {
+    if (isTouchMode()) return;
     const id = window.setTimeout(() => document.querySelector<HTMLTextAreaElement>(".ant-modal textarea.amgc-focus-first")?.focus(), 120);
     return () => window.clearTimeout(id);
   }, []);

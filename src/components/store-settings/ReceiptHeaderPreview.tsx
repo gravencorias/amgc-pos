@@ -1,4 +1,5 @@
 import type { IStoreDetailsFormValues } from "../../models/store-settings/store-settings.request.model";
+import { receiptWidthClass } from "../../utils/receipt.util";
 
 interface IProps {
   values: Partial<IStoreDetailsFormValues> | undefined;
@@ -8,7 +9,7 @@ interface IProps {
 // How the top and bottom of a receipt will print with the details being edited.
 const ReceiptHeaderPreview = ({ values, logoUrl }: IProps) => (
   <div className="amgc-receipt-stage">
-    <div className="amgc-receipt" aria-label="Receipt preview">
+    <div className={`amgc-receipt${receiptWidthClass(values?.receiptWidth)}`} aria-label="Receipt preview">
       {values?.showLogoOnReceipt && logoUrl && <img className="amgc-receipt__logo" src={logoUrl} alt="" />}
       <p className="amgc-receipt__center amgc-receipt__store">{values?.storeName || "Store name"}</p>
       {values?.tagline && <p className="amgc-receipt__center">{values.tagline}</p>}

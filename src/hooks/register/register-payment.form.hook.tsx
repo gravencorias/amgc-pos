@@ -18,6 +18,7 @@ import { Toast } from "../../utils/http_service";
 import { getApiErrorMessage } from "../../utils/helpers";
 import { cartGross, computeSaleTotals, focusRegisterSearch, quickCashAmounts } from "../../utils/sale.util";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
+import useTouchMode from "../touch/touch.hook";
 import SaleReceiptPanel from "../../components/register/SaleReceiptPanel";
 import SaleVoidForm from "../../components/sales/SaleVoidForm";
 
@@ -69,6 +70,7 @@ export const useRegisterPaymentFormHook = () => {
   const { closeModal } = useModalStore();
   const { lines, orderType, tableNo, discount, clearOrder, setLastSale } = useRegisterStore();
   const { data: settings } = useStoreSettingsQuery();
+  const isTouch = useTouchMode();
 
   const totals = computeSaleTotals(cartGross(lines), !!discount, settings?.vatRegistered ?? true);
   const method = (Form.useWatch("method", form) as PaymentMethodEnum | undefined) ?? PaymentMethodEnum.cash;
@@ -82,14 +84,25 @@ export const useRegisterPaymentFormHook = () => {
   }, [form]);
 
   // The cashier types the cash straight away. antd's Modal takes focus as it opens,
-  // which beats autoFocus, so focus the box once it has.
+  // which beats autoFocus, so focus the box once it has. Not in touch mode: the number pad
+  // is there instead of the on-screen keyboard.
   useEffect(() => {
+    if (isTouch) return;
     const id = window.setTimeout(
       () => document.querySelector<HTMLInputElement>(".ant-modal .amgc-payment-focus input, .ant-modal input.amgc-payment-focus")?.focus(),
       120,
     );
     return () => window.clearTimeout(id);
-  }, [method]);
+  }, [method, isTouch]);
+
+  // The on-screen number pad (touch mode): whole pesos, typed like a calculator. An amount
+  // with centavos (from Exact) starts over on the first key.
+  const pressCashKey = (key: string) => {
+    const current = form.getFieldValue("tendered") as number | null | undefined;
+    const digits = typeof current === "number" && Number.isInteger(current) ? String(current) : "";
+    const next = key === "back" ? digits.slice(0, -1) : (digits + key).replace(/^0+(?=\d)/, "").slice(0, 7);
+    form.setFieldValue("tendered", next === "" ? undefined : Number(next));
+  };
 
   const saleMutation = useMutation({
     mutationFn: SaleService.create,
@@ -138,6 +151,8 @@ export const useRegisterPaymentFormHook = () => {
     isShort: method === PaymentMethodEnum.cash && change < 0,
     quickAmounts: quickCashAmounts(totals.total),
     setTendered: (amount: number) => form.setFieldValue("tendered", amount),
+    isTouch,
+    pressCashKey,
     handleSubmit,
     handleClose: () => {
       closeModal();

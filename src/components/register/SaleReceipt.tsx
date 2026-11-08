@@ -11,6 +11,7 @@ import {
 import type { ISaleResponse } from "../../models/sale/sale.response.model";
 import type { IStoreSettingsResponse } from "../../models/store-settings/store-settings.response.model";
 import { peso } from "../../utils/sale.util";
+import { receiptWidthClass } from "../../utils/receipt.util";
 
 interface IProps {
   sale: ISaleResponse;
@@ -30,7 +31,7 @@ const SaleReceipt = ({ sale, settings, ref }: IProps) => {
   const voidedAt = voidInfo ? new Date(voidInfo.voidedAt) : null;
 
   return (
-    <div className={`amgc-receipt${voidInfo ? " is-void" : ""}`} ref={ref}>
+    <div className={`amgc-receipt${receiptWidthClass(settings?.receiptWidth)}${voidInfo ? " is-void" : ""}`} ref={ref}>
       {settings?.showLogoOnReceipt && settings.logoUrl && <img className="amgc-receipt__logo" src={settings.logoUrl} alt="" />}
       <p className="amgc-receipt__center amgc-receipt__store">{settings?.storeName ?? "Store"}</p>
       {settings?.tagline && <p className="amgc-receipt__center">{settings.tagline}</p>}

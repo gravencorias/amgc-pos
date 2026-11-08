@@ -16,6 +16,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { dirname, resolve } from "node:path";
+import { networkInterfaces } from "node:os";
 
 type Role = { code: string; value: string };
 type User = {
@@ -135,6 +136,7 @@ const DEFAULT_SETTINGS = {
   vatRegistered: true,
   receiptFooter: "Salamat po! Come again.",
   showLogoOnReceipt: true,
+  receiptWidth: "80mm",
   logoUrl: null as string | null,
   theme: "ube",
   customColor: "#0D6C77",
@@ -695,6 +697,20 @@ const usernameTaken = (username: string, exceptId?: number) =>
 const canManage = (actor: User, target: User) =>
   actor.role.code === ROLES.owner.code || (actor.role.code === ROLES.manager.code && target.role.code === ROLES.cashier.code);
 
+// This PC's addresses on the store's network, for Settings > Devices. The real API keeps
+// adapters that have a gateway; Node doesn't report gateways, so this goes by name and drops
+// the usual virtual ones (WSL, Hyper-V, VirtualBox), unless nothing else is left.
+const VIRTUAL_ADAPTER = /vEthernet|WSL|Hyper-V|VirtualBox|VMware|Docker|Loopback/i;
+const serverInfo = (port: number) => {
+  const all = Object.entries(networkInterfaces()).flatMap(([adapterName, list]) =>
+    (list ?? [])
+      .filter((a) => a.family === "IPv4" && !a.internal && !a.address.startsWith("169.254."))
+      .map((a) => ({ address: a.address, adapterName, url: `http://${a.address}:${port}` })),
+  );
+  const real = all.filter((a) => !VIRTUAL_ADAPTER.test(a.adapterName));
+  return { port, addresses: real.length > 0 ? real : all };
+};
+
 export const mockApi = (): Plugin => ({
   name: "amgc-mock-api",
   apply: "serve",
@@ -736,6 +752,12 @@ export const mockApi = (): Plugin => ({
 
         if (method === "GET" && path === "/account/me") return send(res, 200, account(user, token));
 
+        // System. The port is the one the request came in on: Vite's during yarn dev, the API's when installed.
+        if (method === "GET" && path === "/system/server-info") {
+          if (!isManager) return send(res, 403, { message: "Only an owner or manager can see the server's addresses." });
+          return send(res, 200, serverInfo(req.socket.localPort ?? 5173));
+        }
+
         // Store settings
         if (method === "GET" && path === "/store-settings") return send(res, 200, db.settings);
 
@@ -745,6 +767,8 @@ export const mockApi = (): Plugin => ({
         if (method === "PUT" && path === "/store-settings/update") {
           const body = json();
           if (!String(body.storeName ?? "").trim()) return send(res, 400, { message: "Store name is required." });
+          if (!["80mm", "58mm"].includes(body.receiptWidth))
+            return send(res, 400, { message: "Choose the receipt paper: 80 mm or 58 mm." });
           db.settings = { ...db.settings, ...body, logoUrl: db.settings.logoUrl, updatedAt: new Date().toISOString() };
           saveDb();
           return send(res, 200, db.settings);

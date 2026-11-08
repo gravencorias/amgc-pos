@@ -1,4 +1,5 @@
-import { Button, Card, Col, Form, Input, Row, Switch, type FormInstance } from "antd";
+import { Button, Card, Col, Form, Input, Row, Segmented, Switch, type FormInstance } from "antd";
+import { ReceiptWidthEnum, receiptWidthLabel } from "../../enums/receipt.enum";
 import type { IStoreDetailsFormValues } from "../../models/store-settings/store-settings.request.model";
 import type { IStoreSettingsResponse } from "../../models/store-settings/store-settings.response.model";
 import ReceiptHeaderPreview from "./ReceiptHeaderPreview";
@@ -62,8 +63,19 @@ const StoreDetailsForm = ({ form, storeSettings, values, isDirty, isSaving, onFi
             >
               <Input placeholder="Salamat po! Come again." />
             </Form.Item>
-            <Form.Item label="Print the logo on receipts" name="showLogoOnReceipt" valuePropName="checked" className="!mb-0">
+            <Form.Item label="Print the logo on receipts" name="showLogoOnReceipt" valuePropName="checked">
               <Switch />
+            </Form.Item>
+            <Form.Item
+              label="Receipt paper"
+              name="receiptWidth"
+              rules={[{ required: true, message: "Choose the receipt paper." }]}
+              extra="Match the printer's paper roll. Most counter printers take 80 mm; small Bluetooth printers take 58 mm."
+              className="!mb-0"
+            >
+              <Segmented<ReceiptWidthEnum>
+                options={Object.values(ReceiptWidthEnum).map((value) => ({ value, label: receiptWidthLabel[value] }))}
+              />
             </Form.Item>
           </Card>
 

@@ -3,7 +3,7 @@ import { useReactToPrint } from "react-to-print";
 import { useModalStore } from "../../stores/common/modal.store";
 import { useCloseDayStore } from "../../stores/data/close-day.store";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
-import { RECEIPT_PAGE_STYLE } from "../../constants/constantReceipt";
+import { receiptPageStyle } from "../../utils/receipt.util";
 
 // A Z reading in the modal, just after closing or from the past closings list, with print.
 export const useZReadingHook = () => {
@@ -14,7 +14,7 @@ export const useZReadingHook = () => {
 
   const print = useReactToPrint({
     contentRef: zReadingRef,
-    pageStyle: RECEIPT_PAGE_STYLE,
+    pageStyle: receiptPageStyle(settings?.receiptWidth),
     documentTitle: viewingClose ? `Z reading ${viewingClose.zNumber}` : "Z reading",
   });
 

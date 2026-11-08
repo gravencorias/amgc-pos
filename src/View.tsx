@@ -1,5 +1,6 @@
 import { useViewHook } from "./hooks/view/view.hook";
 import LoadingScreen from "./common/screen/LoadingScreen";
+import OfflineScreen from "./common/status/OfflineScreen";
 import { Route, Routes } from "react-router-dom";
 import PageNotFoundLayout from "./layouts/PageNotFoundLayout";
 import PublicLayout from "./layouts/PublicLayout";
@@ -22,24 +23,30 @@ const View = () => {
   const isForbidden = (role?: UserRoleEnum[]) => !!role && !!roles && !role.some((r) => roles.includes(r));
 
   return (
-    <LoadingScreen visible={getMeQuery.isFetching}>
-      <Routes>
-        <Route element={<PublicLayout />}>
-          {flattenRoutes(PublicRoutes).map(({ key, path, component: Component }) => {
-            if (Component) return <Route key={key} path={path} element={<Component />} />;
-          })}
-        </Route>
+    <>
+      <LoadingScreen visible={getMeQuery.isFetching}>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            {flattenRoutes(PublicRoutes).map(({ key, path, component: Component }) => {
+              if (Component) return <Route key={key} path={path} element={<Component />} />;
+            })}
+          </Route>
 
-        <Route path="/" element={<ProtectedLayout />}>
-          {flattenRoutes(ProtectedRoutes).map(({ key, path, role, component: Component }) => {
-            if (Component)
-              return <Route key={key} path={path} element={isForbidden(role) ? <Forbidden /> : <Component />} />;
-          })}
-        </Route>
+          <Route path="/" element={<ProtectedLayout />}>
+            {flattenRoutes(ProtectedRoutes).map(({ key, path, role, component: Component }) => {
+              if (Component)
+                return <Route key={key} path={path} element={isForbidden(role) ? <Forbidden /> : <Component />} />;
+            })}
+          </Route>
 
-        <Route path="*" element={<PageNotFoundLayout />} />
-      </Routes>
-    </LoadingScreen>
+          <Route path="*" element={<PageNotFoundLayout />} />
+        </Routes>
+      </LoadingScreen>
+
+      {/* Outside the routes and the loading screen, over both: an outage can happen on any
+          page, or before the first one has loaded. */}
+      <OfflineScreen />
+    </>
   );
 };
 

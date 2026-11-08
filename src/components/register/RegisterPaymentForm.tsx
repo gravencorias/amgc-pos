@@ -5,6 +5,7 @@ import { useRegisterPaymentFormHook } from "../../hooks/register/register-paymen
 import type { IRegisterPaymentFormValues } from "../../models/sale/sale.request.model";
 import { pesoAmount } from "../../utils/helpers";
 import { peso } from "../../utils/sale.util";
+import CashPad from "./CashPad";
 
 const { Text } = Typography;
 
@@ -46,30 +47,39 @@ const RegisterPaymentForm = () => {
         </Form.Item>
 
         {isCash ? (
-          <>
-            <Form.Item label="Cash received" name="tendered" extra="Leave it empty for the exact amount.">
-              <InputNumber
-                size="large"
-                className="!w-full amgc-cash-input amgc-payment-focus"
-                prefix="₱"
-                min={0}
-                precision={2}
-                placeholder={payment.totals.total.toFixed(2)}
-              />
-            </Form.Item>
-            <div className="mb-4 flex flex-wrap gap-2">
-              <Button onClick={() => payment.setTendered(payment.totals.total)}>Exact</Button>
-              {payment.quickAmounts.map((amount) => (
-                <Button key={amount} className="tabular-nums" onClick={() => payment.setTendered(amount)}>
-                  {pesoAmount(amount)}
-                </Button>
-              ))}
+          <div className={`amgc-payment-cash${payment.isTouch ? " is-touch" : ""}`}>
+            <div>
+              <Form.Item
+                label="Cash received"
+                name="tendered"
+                extra={payment.isTouch ? undefined : "Leave it empty for the exact amount."}
+              >
+                <InputNumber
+                  size="large"
+                  className="!w-full amgc-cash-input amgc-payment-focus"
+                  prefix="₱"
+                  min={0}
+                  precision={2}
+                  placeholder={payment.totals.total.toFixed(2)}
+                  // Touch mode types with the pad beside it, so tapping the box mustn't raise the tablet's keyboard.
+                  inputMode={payment.isTouch ? "none" : "decimal"}
+                />
+              </Form.Item>
+              <div className="mb-4 flex flex-wrap gap-2">
+                <Button onClick={() => payment.setTendered(payment.totals.total)}>Exact</Button>
+                {payment.quickAmounts.map((amount) => (
+                  <Button key={amount} className="tabular-nums" onClick={() => payment.setTendered(amount)}>
+                    {pesoAmount(amount)}
+                  </Button>
+                ))}
+              </div>
+              <div className={`amgc-change ${payment.isShort ? "is-short" : "is-ok"}`}>
+                <span>{payment.isShort ? "Short by" : "Change"}</span>
+                <strong className="tabular-nums">{peso(Math.abs(payment.change))}</strong>
+              </div>
             </div>
-            <div className={`amgc-change ${payment.isShort ? "is-short" : "is-ok"}`}>
-              <span>{payment.isShort ? "Short by" : "Change"}</span>
-              <strong className="tabular-nums">{peso(Math.abs(payment.change))}</strong>
-            </div>
-          </>
+            {payment.isTouch && <CashPad onKey={payment.pressCashKey} />}
+          </div>
         ) : (
           <Form.Item
             label="Reference number"
@@ -95,7 +105,13 @@ const RegisterPaymentForm = () => {
             <Button size="large" onClick={payment.handleClose}>
               Cancel
             </Button>
-            <Button type="primary" size="large" htmlType="submit" loading={payment.isCharging} disabled={payment.isShort}>
+            <Button
+              type="primary"
+              size="large"
+              htmlType="submit"
+              loading={payment.isCharging}
+              disabled={payment.isShort}
+            >
               Complete sale <kbd className="amgc-kbd amgc-kbd--on-primary !ml-1">Enter</kbd>
             </Button>
           </Space>

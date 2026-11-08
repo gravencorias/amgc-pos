@@ -1,7 +1,8 @@
-import { Empty, Switch, Table, Tag, Typography } from "antd";
+import { Button, Empty, Switch, Table, Tag, Typography } from "antd";
 import type { TablePaginationConfig } from "antd";
 import type { ColumnsType, FilterValue, SorterResult } from "antd/es/table/interface";
 import { useContextMenu } from "react-contexify";
+import { MoreIcon } from "../../assets/icons/Icons";
 import type { IPaginatedResult } from "../../models/common/pagination";
 import type { IProductResponse } from "../../models/product/product.response.model";
 import { pesoAmount } from "../../utils/helpers";
@@ -17,6 +18,8 @@ type IProps = {
   addOnNames: Record<number, string>;
   menuProduct: IProductResponse | null;
   setMenuProduct: (record: IProductResponse) => void;
+  // Touch mode adds a visible ⋯ button that opens the row menu.
+  isTouch: boolean;
   onTableChange: (
     pagination: TablePaginationConfig,
     filters: Record<string, FilterValue | null>,
@@ -36,6 +39,7 @@ const ProductTable = ({
   addOnNames,
   menuProduct,
   setMenuProduct,
+  isTouch,
   onTableChange,
   onEdit,
   onToggleAvailable,
@@ -113,6 +117,27 @@ const ProductTable = ({
     },
   ];
 
+  // Touch mode: the same row menu from a visible ⋯, so it's clear the rows have one.
+  const actionsColumn: ColumnsType<IProductResponse>[number] = {
+    key: "actions",
+    width: 64,
+    // Pinned, so a table that scrolls sideways on a tablet keeps the button in view.
+    fixed: "right",
+    align: "right",
+    render: (_, row) => (
+      <Button
+        type="text"
+        aria-label={`Options for ${row.name}`}
+        icon={<MoreIcon size={20} />}
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuProduct(row);
+          show({ event: e, props: { record: row } });
+        }}
+      />
+    ),
+  };
+
   return (
     <>
       <Table<IProductResponse>
@@ -120,7 +145,7 @@ const ProductTable = ({
         loading={listLoading}
         className="w-full"
         scroll={{ x: "max-content" }}
-        columns={columns}
+        columns={[...columns, ...(isTouch ? [actionsColumn] : [])]}
         dataSource={productDataList?.data}
         rowClassName="cursor-pointer"
         onChange={onTableChange}

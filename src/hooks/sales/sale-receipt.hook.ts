@@ -3,7 +3,7 @@ import { useReactToPrint } from "react-to-print";
 import { useModalStore } from "../../stores/common/modal.store";
 import { useSalesStore } from "../../stores/data/sales.store";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
-import { RECEIPT_PAGE_STYLE } from "../../constants/constantReceipt";
+import { receiptPageStyle } from "../../utils/receipt.util";
 
 // A past receipt, opened from the Sales list, with reprint.
 export const useSaleReceiptHook = () => {
@@ -14,7 +14,7 @@ export const useSaleReceiptHook = () => {
 
   const print = useReactToPrint({
     contentRef: receiptRef,
-    pageStyle: RECEIPT_PAGE_STYLE,
+    pageStyle: receiptPageStyle(settings?.receiptWidth),
     documentTitle: viewingSale ? `Receipt ${viewingSale.receiptNumber} (reprint)` : "Receipt",
   });
 

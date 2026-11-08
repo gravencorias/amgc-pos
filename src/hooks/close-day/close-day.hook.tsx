@@ -18,6 +18,7 @@ import { DayCloseStatusEnum } from "../../enums/day-close.enum";
 import { useAuthStore } from "../../stores/common/auth.store";
 import { checkIfOwner } from "../../utils/roleChecker";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
+import useTouchMode from "../touch/touch.hook";
 
 const { Text } = Typography;
 
@@ -31,6 +32,7 @@ const cashTotal = (counts: IDayCloseFormValues["counts"] | undefined) =>
 export const useCloseDayHook = () => {
   const [form] = Form.useForm<IDayCloseFormValues>();
   const queryClient = useQueryClient();
+  const isTouch = useTouchMode();
   const { showModal, closeModal } = useModalStore();
   const { closePagination, setClosePagination, setViewingClose } = useCloseDayStore();
   const userAccount = useAuthStore((state) => state.userAccount);
@@ -150,6 +152,10 @@ export const useCloseDayHook = () => {
     closeListQuery,
     form,
     counts: counts ?? {},
+    // Touch mode: - / + beside each count box.
+    isTouch,
+    stepCount: (denomination: string, delta: number) =>
+      form.setFieldValue(["counts", denomination], Math.max(0, (form.getFieldValue(["counts", denomination]) ?? 0) + delta)),
     countedCash,
     expectedCash,
     overShort: round2(countedCash - expectedCash),

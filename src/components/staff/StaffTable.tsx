@@ -1,7 +1,8 @@
-import { Avatar, Badge, Empty, Table, Tag, Typography } from "antd";
+import { Avatar, Badge, Button, Empty, Table, Tag, Typography } from "antd";
 import type { TablePaginationConfig } from "antd";
 import type { ColumnsType, FilterValue, SorterResult } from "antd/es/table/interface";
 import { useContextMenu } from "react-contexify";
+import { MoreIcon } from "../../assets/icons/Icons";
 import type { IPaginatedResult } from "../../models/common/pagination";
 import type { IStaffResponse } from "../../models/staff/staff.response.model";
 import { UserRoleEnum } from "../../enums/user-role.enum";
@@ -17,6 +18,8 @@ type IProps = {
   myId: number;
   menuStaff: IStaffResponse | null;
   setMenuStaff: (record: IStaffResponse) => void;
+  // Touch mode adds a visible ⋯ button that opens the row menu.
+  isTouch: boolean;
   permissionsFor: (record: IStaffResponse | null) => IStaffPermissions;
   onTableChange: (
     pagination: TablePaginationConfig,
@@ -39,6 +42,7 @@ const StaffTable = ({
   myId,
   menuStaff,
   setMenuStaff,
+  isTouch,
   permissionsFor,
   onTableChange,
   onEdit,
@@ -110,6 +114,27 @@ const StaffTable = ({
     },
   ];
 
+  // Touch mode: the same row menu from a visible ⋯, so it's clear the rows have one.
+  const actionsColumn: ColumnsType<IStaffResponse>[number] = {
+    key: "actions",
+    width: 64,
+    // Pinned, so a table that scrolls sideways on a tablet keeps the button in view.
+    fixed: "right",
+    align: "right",
+    render: (_, row) => (
+      <Button
+        type="text"
+        aria-label={`Options for ${row.fullName}`}
+        icon={<MoreIcon size={20} />}
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuStaff(row);
+          show({ event: e, props: { record: row } });
+        }}
+      />
+    ),
+  };
+
   return (
     <>
       <Table<IStaffResponse>
@@ -117,7 +142,7 @@ const StaffTable = ({
         loading={listLoading}
         className="w-full"
         scroll={{ x: "max-content" }}
-        columns={columns}
+        columns={[...columns, ...(isTouch ? [actionsColumn] : [])]}
         dataSource={staffDataList?.data}
         rowClassName="cursor-pointer"
         onChange={onTableChange}

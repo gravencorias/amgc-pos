@@ -12,8 +12,11 @@
 @use "./register";
 @use "./sales";
 @use "./close-day";
+@use "./devices";
 @use "./swal";
 @use "./segmented";
+@use "./offline";
+@use "./touch"; // last: its html[data-touch] rules adjust the partials above
 
 @tailwind base;
 @tailwind components;

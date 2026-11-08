@@ -12,6 +12,7 @@ import { useModalStore } from "../../stores/common/modal.store";
 import { useStaffStore } from "../../stores/data/staff.store";
 import { debounce } from "../../utils/debouncer";
 import { showPopConfirmation, Toast } from "../../utils/http_service";
+import useTouchMode from "../touch/touch.hook";
 import { canManageStaff, checkIfOwner } from "../../utils/roleChecker";
 import { getApiErrorMessage } from "../../utils/helpers";
 
@@ -26,6 +27,7 @@ export type IStaffPermissions = {
 };
 
 export const useStaffHook = () => {
+  const isTouch = useTouchMode();
   const queryClient = useQueryClient();
   const { showModal } = useModalStore();
   const { staffPagination, setStaffPagination, setEditingStaff, setCredentialStaff, menuStaff, setMenuStaff } =
@@ -115,6 +117,7 @@ export const useStaffHook = () => {
   };
 
   return {
+    isTouch,
     getStaffList,
     staffPagination,
     isOwner,

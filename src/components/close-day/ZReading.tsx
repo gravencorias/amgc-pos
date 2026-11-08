@@ -4,6 +4,7 @@ import { denominationLabel } from "../../constants/constantCash";
 import { paymentMethodLabel } from "../../enums/sale.enum";
 import type { IDayCloseResponse } from "../../models/day-close/day-close.response.model";
 import type { IStoreSettingsResponse } from "../../models/store-settings/store-settings.response.model";
+import { receiptWidthClass } from "../../utils/receipt.util";
 
 interface IProps {
   dayClose: IDayCloseResponse;
@@ -21,14 +22,14 @@ const Row = ({ label, value }: { label: string; value: string }) => (
   </p>
 );
 
-// The end-of-day Z reading on the 80 mm printer, in the sale receipt's styles.
+// The end-of-day Z reading on the receipt printer, in the sale receipt's styles.
 const ZReading = ({ dayClose: z, settings, ref }: IProps) => {
   const f = z.figures;
   const closedAt = new Date(z.closedAt);
   const day = new Date(`${z.date}T00:00:00`);
 
   return (
-    <div className="amgc-receipt" ref={ref}>
+    <div className={`amgc-receipt${receiptWidthClass(settings?.receiptWidth)}`} ref={ref}>
       <p className="amgc-receipt__center amgc-receipt__store">{settings?.storeName ?? "Store"}</p>
       {settings?.address && <p className="amgc-receipt__center">{settings.address}</p>}
       {settings?.tin && (

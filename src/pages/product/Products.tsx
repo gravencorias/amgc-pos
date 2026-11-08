@@ -100,6 +100,7 @@ const Products = () => {
           addOnNames={products.addOnNames}
           menuProduct={products.menuProduct}
           setMenuProduct={products.setMenuProduct}
+          isTouch={products.isTouch}
           onTableChange={products.onTableChange}
           onEdit={openForm}
           onToggleAvailable={products.toggleAvailable}

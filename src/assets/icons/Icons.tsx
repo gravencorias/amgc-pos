@@ -40,4 +40,10 @@ export {
   LuX as CloseIcon,
   LuChevronLeft as PreviousIcon,
   LuChevronRight as NextIcon,
+  LuEllipsis as MoreIcon,
+  LuTabletSmartphone as DevicesIcon,
+  LuQrCode as QrCodeIcon,
+  LuCopy as CopyIcon,
+  LuWifiOff as OfflineIcon,
+  LuRotateCw as RetryIcon,
 } from "react-icons/lu";

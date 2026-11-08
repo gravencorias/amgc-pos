@@ -4,11 +4,11 @@ import View from "./View";
 import { useAppHook } from "./hooks/app/app.hook";
 
 function App() {
-  const { theme, queryClient } = useAppHook();
+  const { theme, queryClient, componentSize } = useAppHook();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider theme={theme}>
+      <ConfigProvider theme={theme} componentSize={componentSize}>
         <View />
       </ConfigProvider>
     </QueryClientProvider>

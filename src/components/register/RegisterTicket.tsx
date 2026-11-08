@@ -131,6 +131,7 @@ const RegisterTicket = ({
                 <Button
                   size="small"
                   type="text"
+                  className="amgc-ticket__remove"
                   aria-label={`Remove ${l.name}`}
                   icon={<CloseIcon size={14} />}
                   onClick={(e) => {
@@ -149,7 +150,12 @@ const RegisterTicket = ({
       <Empty
         className="amgc-ticket__empty"
         image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description="No items yet. Click a product, or type its name and press Enter."
+        description={
+          <>
+            <span className="amgc-touch-hide">No items yet. Click a product, or type its name and press Enter.</span>
+            <span className="amgc-touch-only">No items yet. Tap a product to add it.</span>
+          </>
+        }
       />
     )}
 

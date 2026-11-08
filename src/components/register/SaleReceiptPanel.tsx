@@ -55,7 +55,7 @@ const SaleReceiptPanel = ({ onVoid }: IProps) => {
         )}
       </div>
       <Text className="!text-xs !text-[var(--amgc-text-muted)]">
-        Print sends the receipt to the computer's printer. Choose the receipt printer the first time.
+        Print sends the receipt to this device's printer. Choose the receipt printer the first time.
       </Text>
     </div>
   );

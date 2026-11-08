@@ -11,12 +11,14 @@ import { useModalStore } from "../../stores/common/modal.store";
 import { useProductStore } from "../../stores/data/product.store";
 import { debounce } from "../../utils/debouncer";
 import { showPopConfirmation, Toast } from "../../utils/http_service";
+import useTouchMode from "../touch/touch.hook";
 import { getApiErrorMessage } from "../../utils/helpers";
 import { ADD_ONS_KEY, CATEGORIES_KEY, PRODUCT_ALL_KEY, PRODUCT_LIST_KEY } from "../../constants/constantQueryKeys";
 import { useAddOnsQuery } from "../add-on/add-on.hook";
 import { useCategoriesQuery } from "../category/category.hook";
 
 export const useProductHook = () => {
+  const isTouch = useTouchMode();
   const queryClient = useQueryClient();
   const { showModal } = useModalStore();
   const { showDrawer } = useDrawerStore();
@@ -107,6 +109,7 @@ export const useProductHook = () => {
   };
 
   return {
+    isTouch,
     getProductList,
     categories,
     totalInMenu: categories.reduce((sum, c) => sum + c.productCount, 0),

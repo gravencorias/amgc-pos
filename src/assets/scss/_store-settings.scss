@@ -342,3 +342,34 @@
   font-weight: 700;
   font-size: 14px;
 }
+
+// A 58 mm roll (32 characters a line): narrower and a size smaller. Printing fills the page
+// (receiptPageStyle), so only the type size carries over to paper.
+.amgc-receipt.is-58mm {
+  width: min(220px, 100%);
+  padding: 18px 12px 24px;
+  font-size: 11px;
+
+  .amgc-receipt__store,
+  .amgc-receipt__total {
+    font-size: 12.5px;
+  }
+  .amgc-receipt__logo {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+// In a dialog (the receipt after Charge, a reprint, a Z reading), a long receipt scrolls inside
+// its stage on short screens, so Print, Void and Start next order stay in view: a tablet's
+// browser bar leaves about 700px. Printing takes the receipt itself, not the stage.
+@media (max-height: 900px) {
+  .ant-modal .amgc-receipt-stage {
+    // About 330px of dialog around the stage (title, change, buttons, hint), plus a margin.
+    max-height: calc(100dvh - 380px);
+    min-height: 220px;
+    overflow-y: auto;
+    // Centered content taller than a scrolling box can't be scrolled to its top.
+    place-items: start center;
+  }
+}
