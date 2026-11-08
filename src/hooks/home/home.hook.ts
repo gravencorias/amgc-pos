@@ -24,7 +24,7 @@ export const useHomeHook = () => {
   const userAccount = useAuthStore((state) => state.userAccount);
   const { data: settings, isLoading } = useStoreSettingsQuery();
   const { data: categories } = useCategoriesQuery();
-  const isManager = checkIfManager(userAccount.tokenInfo?.accessLevels);
+  const isManager = checkIfManager(userAccount.tokenInfo?.roles);
   // Cashiers can't read sales (the API returns 403), so only ask for managers.
   const todayQuery = useQuery({
     queryKey: [...SALE_SUMMARY_KEY, phToday()],

@@ -1,8 +1,6 @@
 # amgc-pos-api contract
 
-These are the routes the frontend calls today. Build `amgc-pos-api` (ASP.NET Core + PostgreSQL, structured with the `senior-backend-dcwd-developer` skill) to answer them.
-
-Until then, `mock/mock-api.ts` answers them during `yarn dev`.
+These are the routes the frontend calls. `amgc-pos-api` (`D:\Repositories\amgc-pos-api`: ASP.NET Core + PostgreSQL, built with the `senior-backend-dcwd-developer` skill) answers all of them, and `mock/mock-api.ts` answers the same routes during `yarn dev`. A change here means a change in both.
 
 - **Base URL:** `VITE_API_URL`.
 - **Auth:** `Authorization: Bearer <token>` on every route except the ones marked *public*.
@@ -29,13 +27,14 @@ Until then, `mock/mock-api.ts` answers them during `yarn dev`.
     "token": "…",
     "refreshToken": "",
     "expiration": 1767225600000,
-    "roles": [{ "access": "Owner" }],
-    "accessLevels": [{ "code": "P001", "value": "Owner" }]
+    "roles": [{ "access": "P001" }]
   }
 }
 ```
 
-### Access-level codes
+`roles[].access` is the account's role code, and the JWT's role claim carries the same code. The app's routes and permission checks gate on it. `userInfo.roleName` is the display name.
+
+### Role codes
 
 Codes come from `src/enums/user-role.enum.ts`:
 

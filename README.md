@@ -11,7 +11,7 @@ yarn lint
 
 ## Signing in during development
 
-`yarn dev` runs a mock of the future API (`mock/mock-api.ts`). It has these demo accounts, which exist only in the mock:
+`yarn dev` runs a mock of the API (`mock/mock-api.ts`), so the app works without a database. The real API, `amgc-pos-api`, seeds the same demo accounts in development:
 
 | Who | How | Value |
 |---|---|---|
@@ -23,6 +23,17 @@ yarn lint
 The mock starts with the prototype's sample menu (24 products in 6 categories) and a week of sample sales, so the Sales page has something to show.
 
 Everything you change goes to `mock/data/db.json`, which git ignores: settings, staff, the menu and sales. Delete that file to start over.
+
+## Using the real API
+
+Run `amgc-pos-api` (see its README), then set these in `.env.development`:
+
+```
+VITE_API_URL=http://localhost:5000/api/
+VITE_USE_MOCK_API=false
+```
+
+It seeds the same sample menu, but no sample sales.
 
 ## Where things are
 

@@ -320,8 +320,8 @@ const account = (user: User, token: string) => ({
     token,
     refreshToken: "",
     expiration: Date.now() + 12 * 3600e3,
-    roles: [{ access: user.role.value }],
-    accessLevels: [user.role],
+    // The role code (P001, P002 or P003): what the app's routes and permission checks gate on.
+    roles: [{ access: user.role.code }],
   },
 });
 

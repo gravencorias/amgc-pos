@@ -21,7 +21,7 @@ export const useStaffFormHook = () => {
   const { closeModal } = useModalStore();
   const { editingStaff, setEditingStaff } = useStaffStore();
   const userAccount = useAuthStore((state) => state.userAccount);
-  const isOwner = checkIfOwner(userAccount.tokenInfo?.accessLevels);
+  const isOwner = checkIfOwner(userAccount.tokenInfo?.roles);
   const isEditing = !!editingStaff;
 
   const roleCode = Form.useWatch("roleCode", form) ?? editingStaff?.roleCode ?? UserRoleEnum.cashier;

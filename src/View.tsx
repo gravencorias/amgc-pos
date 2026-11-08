@@ -18,8 +18,8 @@ const View = () => {
 
   // A page whose role list the user has none of shows 403, the same check the
   // side menu uses to hide it (filterRoutesByRole).
-  const accessLevels = userAccount?.tokenInfo?.accessLevels?.map((x) => x.code as unknown as UserRoleEnum);
-  const isForbidden = (role?: UserRoleEnum[]) => !!role && !!accessLevels && !role.some((r) => accessLevels.includes(r));
+  const roles = userAccount?.tokenInfo?.roles?.map((x) => x.access as UserRoleEnum);
+  const isForbidden = (role?: UserRoleEnum[]) => !!role && !!roles && !role.some((r) => roles.includes(r));
 
   return (
     <LoadingScreen visible={getMeQuery.isFetching}>

@@ -26,7 +26,7 @@ export const useSaleVoidFormHook = ({ sale, onBack, onVoided }: ISaleVoidFormPro
   const [form] = Form.useForm<ISaleVoidFormValues>();
   const queryClient = useQueryClient();
   const userAccount = useAuthStore((state) => state.userAccount);
-  const needsApproval = !checkIfManager(userAccount.tokenInfo?.accessLevels);
+  const needsApproval = !checkIfManager(userAccount.tokenInfo?.roles);
   const reason = (Form.useWatch("reason", form) as string | undefined) ?? "";
 
   useEffect(() => {

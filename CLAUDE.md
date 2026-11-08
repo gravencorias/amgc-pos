@@ -58,11 +58,42 @@ Follow the `senior-frontend-dcwd-developer` skill. `D:\Repositories\dcwd_erp-hr-
   - `ProtectedLayout` sends signed-out users to Login.
   - `PageNotFoundLayout` handles unknown routes.
   - There's no Unauthorized branch.
-- **Roles** (`enums/user-role.enum.ts`): `P001` Owner, `P002` Manager, `P003` Cashier. Settings routes are limited to Owner and Manager. `View.tsx` shows `Forbidden` (403) if someone opens one by URL without the role.
+- **Roles** (`enums/user-role.enum.ts`): `P001` Owner, `P002` Manager, `P003` Cashier. The signed-in account's code is `tokenInfo.roles[].access` (also the JWT's role claim); there's no separate `accessLevels` list. Routes and `utils/roleChecker.ts` gate on it. Settings routes are limited to Owner and Manager. `View.tsx` shows `Forbidden` (403) if someone opens one by URL without the role.
 - **Branding drives the theme.** The store's settings set the brand color, light/dark mode, corners and text size. See "Theming" below.
 - **No offline screen yet.** `http_service.ts` writes to `connection.store` on every response, but nothing reads it here. The store's comment mentions `common/status/OfflineScreen.tsx`, which this repo doesn't have yet.
 
-## Architecture
+## System architecture (frontend and backend)
+
+AMGC POS is two repos that meet at one contract:
+
+| | Repo | Stack | Role |
+|---|---|---|---|
+| Frontend | `D:\Repositories\amgc-pos` (this one) | React 19, Vite, antd, TanStack Query v4, Zustand | every screen; the Register's totals are for display only |
+| Backend | `D:\Repositories\amgc-pos-api` | ASP.NET Core 9, EF Core 9, PostgreSQL 17 | the source of truth: accounts, menu, pricing, numbering, days |
+| Contract | `docs/api-contract.md` (here) | | every route, payload, rule and status code |
+| Mock | `mock/mock-api.ts` (here) | Vite plugin | answers the contract during `yarn dev`; the quick reference for rules and messages |
+
+**How a store runs it.** Each store installs its own copy on its own PC: PostgreSQL and `amgc-pos-api` run there as Windows services, on port 5000. PC registers open the app in a browser; Android tablets (planned, Capacitor, same code) are extra registers on the store's Wi-Fi. There's no cloud and no multi-tenancy: one install, one store, one database. The API serves this app's production build itself (from its `wwwroot`), so registers open `http://<server>:5000` and the app calls `/api` on the same address. A store gets one setup program, `AMGC-POS-Setup-<version>.exe` (or the same package as a zip), built by `amgc-pos-api/deploy/build-package.ps1`: it runs `yarn build` here, so `.env.production` must keep `VITE_API_URL=/api/` and `VITE_USE_MOCK_API=false` (the script checks). The setup asks for the owner's details and sets up PostgreSQL, the service, the firewall rule and nightly backups; running a newer one upgrades. See "Deployment" in `amgc-pos-api/CLAUDE.md`.
+
+**A request, end to end:**
+1. A page's hook calls a `*.service.ts` method, which goes through `utils/http_service.ts` (Axios, `VITE_API_URL`, `Authorization: Bearer <hr_token>`).
+2. In the API, a thin controller (`Controllers/Main/POS/*`) calls one service method. The controller checks the route's role with `[AuthorizeRoles(...)]`; the service applies the finer rules (who may manage whom, a cashier's own sale from today) and returns `Result<T>`.
+3. `BaseController` turns the `Result` into the HTTP answer: 200 with the value; 400, 403 or 404 with `{ status, title, message, errors }`.
+4. The hook's `onError` shows the message in a toast, mostly through `getApiErrorMessage` (`errors[0].title`, then `message`).
+
+**What the two sides rely on from each other:**
+- **One role concept.** The role code (`P001` Owner, `P002` Manager, `P003` Cashier) is the JWT's role claim, `[AuthorizeRoles]` in the API, `tokenInfo.roles[].access` in `IUserAccountResponse`, and what `IRoute.role` and `utils/roleChecker.ts` check here. There's no `accessLevels` list on either side. `userInfo.roleName` is only for display.
+- **401 means the session ended**, nothing else. `http_service.ts` clears the token on any 401. So the API answers 400 for a wrong PIN, password or void approver, and 401 only for a missing, expired or invalid token. It also answers 401 on every route once an account is turned off or its PIN or password is reset (a session-version claim the API checks on each request).
+- **The server decides the numbers.** It re-prices every sale from the menu (Philippine VAT, senior citizen and PWD discounts), numbers receipts, orders and Z readings, and groups everything by Manila calendar day. The Register's `computeSaleTotals` is a preview; the receipt prints the server's figures.
+- **Lists are `IPaginatedResult`** (`{ data, pageSize, currentPage, totalPages, totalCount }`). An empty page is 200 with `data: []`, never a 404.
+- **Uploaded images** (the logo, product photos) come back as absolute URLs built from the host the client used, so `localhost` on the server PC and `192.168.x.x` on a tablet both load. Upload with `requests.postForm`; the image goes in the `File` part.
+- **Past records don't change.** Staff are turned off, never deleted. A sale copies its item names, prices and cashier's name, so editing or deleting the menu never changes an old receipt. A void and a reopened Z reading stay on record with their status.
+
+**Backend layering** (details in `amgc-pos-api/CLAUDE.md`): five projects, `Common` ← `Domain` ← `Data` ← `Services`, with `API` on top, following the `senior-backend-dcwd-developer` skill. `Common` holds the request and response DTOs (field for field with `src/models/`), constants and helpers; `Domain` the EF entities; `Data` the `DataContext`, migrations, seeding and per-install keys; `Services` the business rules, validators and hand-written mappers (no AutoMapper); `API` the controllers, JWT auth and Swagger.
+
+**Changing the contract** touches four places together: `docs/api-contract.md`, the mock handler, the `*.service.ts` method here, and the route in `amgc-pos-api` (its DTO in `Common`, service, validator and controller).
+
+## Architecture (frontend)
 
 ### Feature shape
 
@@ -142,13 +173,14 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
 
 ### API and mock
 
-There's no backend yet. `docs/api-contract.md` lists every route and its payload.
+`docs/api-contract.md` lists every route and its payload. Two things answer it:
 
-`mock/mock-api.ts` is a Vite plugin. It answers those routes during `yarn dev` when `VITE_USE_MOCK_API=true`, which is the setting in `.env.development`. It matches method and path by hand, and it requires the Bearer token its own sign-in returns on every route except the public ones. It saves settings to `mock/data/db.json`, which git ignores; delete that file to reset.
+- **The real API**, `D:\Repositories\amgc-pos-api` (ASP.NET Core 9, EF Core, PostgreSQL, built with the `senior-backend-dcwd-developer` skill). It answers every route in the contract. Its `CLAUDE.md` has the run steps and decisions; it listens on `http://localhost:5000` and seeds the same demo sign-ins and sample menu in Development (no sample sales).
+- **The mock**, `mock/mock-api.ts`, a Vite plugin. It answers the same routes during `yarn dev` when `VITE_USE_MOCK_API=true`, which is the setting in `.env.development`. It matches method and path by hand, and it requires the Bearer token its own sign-in returns on every route except the public ones. It saves its data to `mock/data/db.json`, which git ignores; delete that file to reset. It's still handy for UI work without a database, and it's the quick reference for the API's rules and messages.
 
-A new API route changes three things together: its row in `api-contract.md`, a handler in `mock-api.ts`, and the matching `*.service.ts` method.
+**To run against the real API:** start `amgc-pos-api`, then set `VITE_API_URL=http://localhost:5000/api/` and `VITE_USE_MOCK_API=false` in `.env.development` (Vite restarts by itself). `.env` has the same URL, but `.env.development` and `.env.production` both override it, so change the mode-specific file. The API allows CORS from `http://localhost:5173` in Development. In production the API serves the built app itself, so `.env.production` keeps `/api/`. Client-side routes work on a full page load too: the API answers any non-API path with `index.html`.
 
-Build the real API in a sibling `amgc-pos-api` repo with the `senior-backend-dcwd-developer` skill. Then set `VITE_API_URL` to it and `VITE_USE_MOCK_API=false`. `.env` has `http://localhost:5000/api/`, but `.env.development` and `.env.production` both override it, so change the mode-specific file.
+A new API route changes four things together: its row in `api-contract.md`, a handler in `mock-api.ts`, the matching `*.service.ts` method, and the route in `amgc-pos-api`.
 
 ## Android tablet version (planned, not started)
 
@@ -158,7 +190,7 @@ The plan is to ship this same React app as an Android app with **Capacitor**, no
 
 **Target:** a 10-inch tablet in landscape. The two-panel Register already fits at about 1280×800. Phones need a one-column layout; leave that for later, or for manager reports only.
 
-**Start after `amgc-pos-api` exists.** The mock only runs inside `yarn dev`. Steps 1 and 2 below can be prototyped earlier against `yarn dev --host` over Wi-Fi.
+**Ready to start:** `amgc-pos-api` exists. A tablet can reach it over Wi-Fi once it listens on the LAN: its production settings already listen on `http://0.0.0.0:5000`, while Development pins `localhost`. The mock only runs inside `yarn dev`, so it's no use to an installed APK.
 
 **Tooling:** Android Studio (SDK and emulator) and JDK 17, plus these packages:
 - `@capacitor/core`, `@capacitor/cli` and `@capacitor/android`
@@ -269,7 +301,9 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
 
   The route's `role` lets owners and managers open the page. Inside it, `canManageStaff` in `utils/roleChecker.ts` decides each row: the owner manages everyone, a manager only cashiers, and nobody can turn off themselves or the owner. The row menu keeps forbidden actions visible but greyed out, with the reason (`permissionsFor` in the hook). The API enforces the same rules; see `docs/api-contract.md`.
 
-Everything in the prototype is built, plus voids and closing the day. Likely next steps:
+Everything in the prototype is built, plus voids and closing the day, and `amgc-pos-api` answers all of it. Likely next steps:
 - partial refunds (single items) if stores ask for them
 - BIR accreditation fields on receipts
-- the real `amgc-pos-api`
+- the Android tablet version (above)
+- a full test install on a spare PC or VM (registering the service, firewall rule and backup task hasn't been run yet)
+- an offline screen (`connection.store` is already fed by `http_service.ts`)

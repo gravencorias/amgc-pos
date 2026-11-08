@@ -31,9 +31,9 @@ export const useStaffHook = () => {
   const { staffPagination, setStaffPagination, setEditingStaff, setCredentialStaff, menuStaff, setMenuStaff } =
     useStaffStore();
   const userAccount = useAuthStore((state) => state.userAccount);
-  const accessLevels = userAccount.tokenInfo?.accessLevels;
+  const roles = userAccount.tokenInfo?.roles;
   const myId = userAccount.id;
-  const isOwner = checkIfOwner(accessLevels);
+  const isOwner = checkIfOwner(roles);
 
   const getStaffList = useQuery({
     queryKey: [...STAFF_LIST_KEY, staffPagination],
@@ -56,7 +56,7 @@ export const useStaffHook = () => {
   // The same rule amgc-pos-api enforces: the owner manages everyone, a manager only cashiers.
   const permissionsFor = (record: IStaffResponse | null): IStaffPermissions => {
     if (!record) return { canEdit: false, canResetCredential: false, canSetActive: false };
-    const canManage = canManageStaff(accessLevels, record.roleCode);
+    const canManage = canManageStaff(roles, record.roleCode);
     if (!canManage) {
       return {
         canEdit: false,

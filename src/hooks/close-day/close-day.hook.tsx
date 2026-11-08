@@ -34,7 +34,7 @@ export const useCloseDayHook = () => {
   const { showModal, closeModal } = useModalStore();
   const { closePagination, setClosePagination, setViewingClose } = useCloseDayStore();
   const userAccount = useAuthStore((state) => state.userAccount);
-  const isOwner = checkIfOwner(userAccount.tokenInfo?.accessLevels);
+  const isOwner = checkIfOwner(userAccount.tokenInfo?.roles);
 
   const currentQuery = useQuery({ queryKey: DAY_CLOSE_CURRENT_KEY, queryFn: DayCloseService.getCurrent });
   const closeListQuery = useQuery({

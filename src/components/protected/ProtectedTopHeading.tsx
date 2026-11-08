@@ -16,7 +16,7 @@ interface IProps {
 const ProtectedTopHeading = ({ storeSettings }: IProps) => {
   const { userAccount, logout } = useAuthStore();
   const { showDrawer } = useDrawerStore();
-  const isManager = checkIfManager(userAccount.tokenInfo?.accessLevels);
+  const isManager = checkIfManager(userAccount.tokenInfo?.roles);
   const currentTime = useClock();
 
   return (

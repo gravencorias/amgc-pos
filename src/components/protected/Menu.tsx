@@ -21,7 +21,7 @@ const Menu = ({ userAccount, isCollapsed, protectedRoutes }: IProps) => {
 
   const roleFilteredRoutes = filterRoutesByRole(
     protectedRoutes,
-    (userAccount.tokenInfo?.accessLevels ?? []).map((x) => x.code as unknown as UserRoleEnum),
+    (userAccount.tokenInfo?.roles ?? []).map((x) => x.access as UserRoleEnum),
   );
   const menuRoutes = filterOutHiddenMenuRoutes(roleFilteredRoutes);
 

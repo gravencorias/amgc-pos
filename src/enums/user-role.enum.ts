@@ -1,4 +1,4 @@
-// Access-level codes returned by amgc-pos-api in tokenInfo.accessLevels[].code.
+// Role codes returned by amgc-pos-api in tokenInfo.roles[].access (also the JWT role claim).
 export enum UserRoleEnum {
   owner = "P001",
   manager = "P002",

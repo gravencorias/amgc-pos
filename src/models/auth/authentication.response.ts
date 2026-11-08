@@ -16,14 +16,9 @@ export interface ITokenInfo {
   refreshToken: string;
   expiration: number;
   roles: IRole[];
-  accessLevels: AccessLevel[];
 }
 
+// The account's role code (UserRoleEnum: P001, P002 or P003). Routes and permission checks gate on it.
 export interface IRole {
   access: string;
-}
-
-export interface AccessLevel {
-  code: string;
-  value: string;
 }
