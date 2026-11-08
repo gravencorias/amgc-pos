@@ -21,6 +21,7 @@ import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
 import useTouchMode from "../touch/touch.hook";
 import SaleReceiptPanel from "../../components/register/SaleReceiptPanel";
 import SaleVoidForm from "../../components/sales/SaleVoidForm";
+import { openCashDrawerAfterCashSale, printerErrorMessage } from "../../utils/receipt-printer.util";
 
 const { Text } = Typography;
 
@@ -114,6 +115,11 @@ export const useRegisterPaymentFormHook = () => {
       queryClient.invalidateQueries(SALE_LIST_KEY);
       queryClient.invalidateQueries(DAY_CLOSE_CURRENT_KEY);
       showReceipt(sale);
+      // Android app with a printer and "Open the cash drawer" on: pop the drawer for the change.
+      if (sale.payment.method === PaymentMethodEnum.cash)
+        openCashDrawerAfterCashSale().catch((error) =>
+          Toast.fire({ icon: "warning", title: `The cash drawer didn't open. ${printerErrorMessage(error)}` }),
+        );
     },
     onError: (error: AxiosError<{ message?: string; errors?: { title?: string }[] }>) => {
       // The day may have just been closed from another computer: check, so the Register shows it.

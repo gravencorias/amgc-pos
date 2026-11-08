@@ -331,16 +331,19 @@ Return **400** with a message for each of these:
 
 ## System
 
-About the store's server PC itself. **Owner or Manager only.** Return 403 to a cashier.
+About the store's server PC itself. **Owner or Manager only**, except `system/version`. Return 403 to a cashier.
 
 | Method | Route | Body / query | Returns |
 |---|---|---|---|
+| GET | `system/version` *(public)* | | `IVersionResponse` |
 | GET | `system/server-info` | | `IServerInfoResponse` |
 
-`IServerInfoResponse` (`src/models/system/system.response.model.ts`):
+`IVersionResponse` and `IServerInfoResponse` (`src/models/system/system.response.model.ts`):
 
 ```json
 {
+  "version": "1.2.0",
+  "androidAppPath": "/downloads/AMGC-POS.apk",
   "port": 5000,
   "addresses": [
     { "address": "192.168.1.10", "adapterName": "Wi-Fi", "url": "http://192.168.1.10:5000" }
@@ -348,7 +351,16 @@ About the store's server PC itself. **Owner or Manager only.** Return 403 to a c
 }
 ```
 
+`system/version` returns only `version` and `androidAppPath`.
+
+- **`version`:** the installed package's version (`build-package.ps1 -Version`), or `dev` when the API runs in Development. The Android app compares it with its own build version and asks for an update when they differ; it never asks when either side is `dev`.
+- **`androidAppPath`:** where the matching Android app downloads from on this server, or `null` when the package has no APK. The API serves it as a static file from `wwwroot`.
+
 - **Why the API answers it:** a browser on the server PC usually opens the app as `localhost`, so the app can't know the address a tablet needs. Settings → Devices shows `url` as a QR code that tablets scan to open the app.
 - **Which addresses:** IPv4 only, on adapters that are up, without loopback, link-local (`169.254.*`) or tunnel adapters. Prefer adapters that have a gateway (the real network); virtual ones (WSL, Hyper-V, hotspot sharing) are listed only when there's nothing else. An empty list is 200 with `addresses: []`.
 - **`port`** is the one the request came in on: the API's, which also serves the app.
 - **The QR code holds only the address,** never a token. Scanning it opens the sign-in screen.
+
+### The Android app's origin
+
+The APK carries its own copy of the app and calls the store's server from the origin `http://localhost` (Capacitor's `androidScheme: "http"`). The API allows that origin through CORS (`Cors:AllowedOrigins` in `appsettings.json`); sign-in is a Bearer token, so no cookie is exposed by it. The mock needs nothing, because the APK never talks to `yarn dev`.

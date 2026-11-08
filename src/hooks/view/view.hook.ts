@@ -4,15 +4,19 @@ import { recordSessionEnd, serviceDownStatus, Toast } from "../../utils/http_ser
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/common/auth.store";
 import type { IUserAccountResponse } from "../../models/auth/authentication.response";
+import { useServerStore } from "../../stores/common/server.store";
+import { isNativeApp } from "../../utils/native.util";
 
 // No portal ?token= capture here: AMGC POS signs people in on its own Login page.
 export const useViewHook = () => {
   const { getToken, setToken, setUserAccount, setIsAuthenticated } = useAuthStore();
+  // The Android app can't ask anyone until it knows the store's server (the Connect screen).
+  const hasServer = useServerStore((state) => !isNativeApp || !!state.serverUrl);
 
   const getMeQuery = useQuery({
     queryKey: ["get-me"],
     queryFn: async () => await AuthenticationService.getMe(),
-    enabled: !!getToken(),
+    enabled: !!getToken() && hasServer,
     onSuccess: (response: IUserAccountResponse) => {
       setUserAccount(response);
       setIsAuthenticated(!!response.tokenInfo.token);

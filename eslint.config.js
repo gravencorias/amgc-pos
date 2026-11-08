@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // build/ is Vite's output; android/ holds the Android project and a copy of that output.
+  globalIgnores(['dist', 'build', 'android']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

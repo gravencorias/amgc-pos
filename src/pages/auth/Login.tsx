@@ -1,4 +1,4 @@
-import { Segmented, Typography } from "antd";
+import { Button, Segmented, Typography } from "antd";
 import PinPad from "../../components/auth/PinPad";
 import PasswordLoginForm from "../../components/auth/PasswordLoginForm";
 import LoginLoungeIllustration from "../../components/auth/LoginLoungeIllustration";
@@ -69,6 +69,15 @@ const Login = () => {
               isLoading={login.isPasswordLoading}
               onFinish={login.onPasswordFinish}
             />
+          )}
+
+          {login.serverAddress && (
+            <p className="amgc-login__server">
+              Store server {login.serverAddress} ·{" "}
+              <Button type="link" size="small" className="!p-0" onClick={login.changeServer}>
+                Change
+              </Button>
+            </p>
           )}
         </div>
       </section>

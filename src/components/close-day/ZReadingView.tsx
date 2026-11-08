@@ -11,7 +11,7 @@ interface IProps {
 
 // A Z reading in the modal, with print, and Reopen when it's allowed.
 const ZReadingView = ({ onReopen }: IProps) => {
-  const { zReadingRef, dayClose, settings, print, handleClose } = useZReadingHook();
+  const { zReadingRef, dayClose, settings, print, isPrinting, handleClose } = useZReadingHook();
   if (!dayClose) return null;
 
   return (
@@ -37,7 +37,7 @@ const ZReadingView = ({ onReopen }: IProps) => {
               Reopen
             </Button>
           )}
-          <Button type="primary" size="large" icon={<PrintIcon size={18} />} onClick={() => print()}>
+          <Button type="primary" size="large" icon={<PrintIcon size={18} />} loading={isPrinting} onClick={() => print()}>
             Print
           </Button>
         </div>

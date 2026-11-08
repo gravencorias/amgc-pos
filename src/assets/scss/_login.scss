@@ -288,3 +288,11 @@
     opacity: 0.45;
   }
 }
+
+// Android app: which store server this tablet uses, with "Change".
+.amgc-login__server {
+  margin: 20px 0 0;
+  text-align: center;
+  color: var(--amgc-text-muted);
+  font-size: 13px;
+}

@@ -700,6 +700,7 @@ const canManage = (actor: User, target: User) =>
 // This PC's addresses on the store's network, for Settings > Devices. The real API keeps
 // adapters that have a gateway; Node doesn't report gateways, so this goes by name and drops
 // the usual virtual ones (WSL, Hyper-V, VirtualBox), unless nothing else is left.
+const VERSION_INFO = { version: "dev", androidAppPath: null };
 const VIRTUAL_ADAPTER = /vEthernet|WSL|Hyper-V|VirtualBox|VMware|Docker|Loopback/i;
 const serverInfo = (port: number) => {
   const all = Object.entries(networkInterfaces()).flatMap(([adapterName, list]) =>
@@ -708,7 +709,7 @@ const serverInfo = (port: number) => {
       .map((a) => ({ address: a.address, adapterName, url: `http://${a.address}:${port}` })),
   );
   const real = all.filter((a) => !VIRTUAL_ADAPTER.test(a.adapterName));
-  return { port, addresses: real.length > 0 ? real : all };
+  return { ...VERSION_INFO, port, addresses: real.length > 0 ? real : all };
 };
 
 export const mockApi = (): Plugin => ({
@@ -726,6 +727,8 @@ export const mockApi = (): Plugin => ({
 
         // Public routes
         if (method === "GET" && path === "/store-settings/public") return send(res, 200, publicSettings());
+        // The real API reports the installed package's version; yarn dev is always "dev", with no APK.
+        if (method === "GET" && path === "/system/version") return send(res, 200, VERSION_INFO);
 
         if (method === "POST" && path === "/auth/login") {
           const { username, password } = json();

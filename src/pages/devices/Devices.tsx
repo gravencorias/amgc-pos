@@ -3,6 +3,8 @@ import { DevicesIcon } from "../../assets/icons/Icons";
 import PageHeader from "../../components/common/PageHeader";
 import ServerQrCard from "../../components/devices/ServerQrCard";
 import TouchModeCard from "../../components/devices/TouchModeCard";
+import AndroidAppCard from "../../components/devices/AndroidAppCard";
+import ReceiptPrinterCard from "../../components/devices/ReceiptPrinterCard";
 import { useDevicesHook } from "../../hooks/devices/devices.hook";
 
 const Devices = () => {
@@ -17,7 +19,7 @@ const Devices = () => {
         description="Add tablets and other registers to the store, and set how this device works."
       />
       <Row gutter={[24, 24]}>
-        <Col xs={24} xl={15}>
+        <Col xs={24} xl={15} className="flex flex-col gap-6">
           <ServerQrCard
             addresses={devices.addresses}
             selected={devices.selected}
@@ -26,13 +28,26 @@ const Devices = () => {
             onSelect={devices.setSelectedAddress}
             onRefresh={() => serverInfoQuery.refetch()}
           />
+          {!serverInfoQuery.isLoading && <AndroidAppCard apkUrl={devices.apkUrl} version={devices.serverVersion} />}
         </Col>
-        <Col xs={24} xl={9}>
+        <Col xs={24} xl={9} className="flex flex-col gap-6">
           <TouchModeCard
             touchMode={devices.touchMode}
             isTouch={devices.isTouch}
             hasTouchscreen={devices.hasTouchscreen}
             onChange={devices.setTouchMode}
+          />
+          <ReceiptPrinterCard
+            isNativeApp={devices.isNativeApp}
+            devices={devices.devices}
+            isLoadingDevices={devices.isLoadingDevices}
+            printer={devices.printer}
+            openDrawer={devices.openDrawer}
+            isTesting={devices.isTesting}
+            onSelect={devices.selectPrinter}
+            onRefresh={devices.refreshDevices}
+            onTest={devices.testPrint}
+            onOpenDrawerChange={devices.setOpenDrawer}
           />
         </Col>
       </Row>

@@ -1,9 +1,9 @@
 import { useRef } from "react";
-import { useReactToPrint } from "react-to-print";
 import { useModalStore } from "../../stores/common/modal.store";
 import { useSalesStore } from "../../stores/data/sales.store";
 import { useStoreSettingsQuery } from "../store-settings/store-settings.hook";
-import { receiptPageStyle } from "../../utils/receipt.util";
+import { useReceiptPrint } from "../printer/receipt-printer.hook";
+import { saleReceiptBytes } from "../../utils/escpos";
 
 // A past receipt, opened from the Sales list, with reprint.
 export const useSaleReceiptHook = () => {
@@ -12,10 +12,11 @@ export const useSaleReceiptHook = () => {
   const { viewingSale, setViewingSale } = useSalesStore();
   const { data: settings } = useStoreSettingsQuery();
 
-  const print = useReactToPrint({
+  const { print, isPrinting, printerName } = useReceiptPrint({
     contentRef: receiptRef,
-    pageStyle: receiptPageStyle(settings?.receiptWidth),
     documentTitle: viewingSale ? `Receipt ${viewingSale.receiptNumber} (reprint)` : "Receipt",
+    receiptWidth: settings?.receiptWidth,
+    buildBytes: () => (viewingSale ? saleReceiptBytes(viewingSale, settings) : null),
   });
 
   return {
@@ -23,6 +24,8 @@ export const useSaleReceiptHook = () => {
     sale: viewingSale,
     settings,
     print,
+    isPrinting,
+    printerName,
     handleClose: () => {
       setViewingSale(null);
       closeModal();

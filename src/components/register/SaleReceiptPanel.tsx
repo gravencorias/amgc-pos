@@ -15,7 +15,7 @@ interface IProps {
 // Shown in the modal after a sale: the change to give, the receipt, and print. A mistake
 // can be voided from here straight away, with a manager's approval for a cashier.
 const SaleReceiptPanel = ({ onVoid }: IProps) => {
-  const { receiptRef, lastSale, settings, print, startNextOrder } = useReceiptHook();
+  const { receiptRef, lastSale, settings, print, isPrinting, printerName, startNextOrder } = useReceiptHook();
   if (!lastSale) return null;
   const isVoid = lastSale.status === SaleStatusEnum.voided;
   const isCash = lastSale.payment.method === PaymentMethodEnum.cash;
@@ -45,7 +45,7 @@ const SaleReceiptPanel = ({ onVoid }: IProps) => {
         Start next order <kbd className="amgc-kbd amgc-kbd--on-primary !ml-1">Enter</kbd>
       </Button>
       <div className="flex gap-2">
-        <Button size="large" className="flex-1" icon={<PrintIcon size={18} />} onClick={() => print()}>
+        <Button size="large" className="flex-1" icon={<PrintIcon size={18} />} loading={isPrinting} onClick={() => print()}>
           Print receipt
         </Button>
         {!isVoid && (
@@ -55,7 +55,9 @@ const SaleReceiptPanel = ({ onVoid }: IProps) => {
         )}
       </div>
       <Text className="!text-xs !text-[var(--amgc-text-muted)]">
-        Print sends the receipt to this device's printer. Choose the receipt printer the first time.
+        {printerName
+          ? `Print sends the receipt to ${printerName}.`
+          : "Print sends the receipt to this device's printer. Choose the receipt printer the first time."}
       </Text>
     </div>
   );

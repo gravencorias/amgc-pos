@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AMGC POS</string>
+    <string name="title_activity_main">AMGC POS</string>
+    <string name="package_name">com.amgc.pos</string>
+    <string name="custom_url_scheme">com.amgc.pos</string>
+</resources>

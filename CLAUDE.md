@@ -15,7 +15,8 @@ A white-label point of sale for coffee shops and restaurants in the Philippines.
 yarn dev                 # http://localhost:5173, with the mock API (demo sign-ins are in README.md)
 yarn build               # tsc -b, then vite build into build/ (not dist/)
 yarn build:development   # vite build in development mode, without the type check
-yarn lint                # eslint .
+yarn lint                # eslint . (skips build/ and android/)
+npx cap sync android     # copy build/ into the Android project (see "Android tablet version" for the APK)
 npx tsc -b               # type check only
 ```
 
@@ -73,7 +74,7 @@ AMGC POS is two repos that meet at one contract:
 | Contract | `docs/api-contract.md` (here) | | every route, payload, rule and status code |
 | Mock | `mock/mock-api.ts` (here) | Vite plugin | answers the contract during `yarn dev`; the quick reference for rules and messages |
 
-**How a store runs it.** Each store installs its own copy on its own PC: PostgreSQL and `amgc-pos-api` run there as Windows services, on port 5000. PC registers open the app in a browser; Android tablets (planned, Capacitor, same code) are extra registers on the store's Wi-Fi. There's no cloud and no multi-tenancy: one install, one store, one database. The API serves this app's production build itself (from its `wwwroot`), so registers open `http://<server>:5000` and the app calls `/api` on the same address. A store gets one setup program, `AMGC-POS-Setup-<version>.exe` (or the same package as a zip), built by `amgc-pos-api/deploy/build-package.ps1`: it runs `yarn build` here, so `.env.production` must keep `VITE_API_URL=/api/` and `VITE_USE_MOCK_API=false` (the script checks). The setup asks for the owner's details and sets up PostgreSQL, the service, the firewall rule and nightly backups; running a newer one upgrades. See "Deployment" in `amgc-pos-api/CLAUDE.md`.
+**How a store runs it.** Each store installs its own copy on its own PC: PostgreSQL and `amgc-pos-api` run there as Windows services, on port 5000. PC registers open the app in a browser; Android tablets are extra registers on the store's Wi-Fi, in their browser or in the Android app (Capacitor, same code, the screens bundled in the APK). There's no cloud and no multi-tenancy: one install, one store, one database. The API serves this app's production build itself (from its `wwwroot`), so registers open `http://<server>:5000` and the app calls `/api` on the same address. A store gets one setup program, `AMGC-POS-Setup-<version>.exe` (or the same package as a zip), built by `amgc-pos-api/deploy/build-package.ps1`: it runs `yarn build` here (and builds the APK when the Android tools and signing key are on that PC), so `.env.production` must keep `VITE_API_URL=/api/` and `VITE_USE_MOCK_API=false` (the script checks). The setup asks for the owner's details and sets up PostgreSQL, the service, the firewall rule and nightly backups; running a newer one upgrades. See "Deployment" in `amgc-pos-api/CLAUDE.md`.
 
 **A request, end to end:**
 1. A page's hook calls a `*.service.ts` method, which goes through `utils/http_service.ts` (Axios, `VITE_API_URL`, `Authorization: Bearer <hr_token>`).
@@ -182,54 +183,55 @@ Login (`login.hook.ts`) and Store details (`store-details.form.hook.ts`) are the
 
 A new API route changes four things together: its row in `api-contract.md`, a handler in `mock-api.ts`, the matching `*.service.ts` method, and the route in `amgc-pos-api`.
 
-## Android tablet version (Phase 1 built; the Android app isn't started)
+## Android tablet version (built; not yet tested on a real tablet)
 
-**Decided:** the tablet version has **all the same features** as the PC app, and it lives **in this repo**, not a separate project. A feature is built once, and both get it; the tablet differences are a touch switch and a printing switch. **Pairing by QR code** is part of it (step 1).
+**Decided:** tablets have **all the same features** as the PC app, from **this repo**: the same React app, wrapped as an Android app with **Capacitor 7** (`android/`). Tablets are extra registers on the store's Wi-Fi, talking to the store's own `amgc-pos-api`; a store can mix PCs and tablets. A tablet-only store (no PC) is out of scope. **Target:** a 10-inch tablet in landscape; phones would need a one-column layout (later, if ever).
 
-The plan is to ship this same React app as an Android app with **Capacitor**, not a rewrite. The `android/` folder lives in this repo, and about 95% of the code is shared. Tablets are extra registers, talking over Wi-Fi to the store's own `amgc-pos-api` on a PC or mini-PC. Data stays on the store's server, as with PC registers, and a store can mix PCs and tablets. A tablet-only store (no PC) would need a cloud API or an on-device database; that's out of scope.
+**Two ways to use a tablet:**
+- **In its browser (Phase 1):** scan the QR code on **Settings → Devices** with the camera, which opens `http://<server>:5000`. Touch mode, the offline screen and 58 mm receipts all work. Printing is the browser's print dialog.
+- **The Android app (Phase 2):** adds direct Bluetooth receipt printing, the cash drawer, and a screen that stays awake.
 
-**Target:** a 10-inch tablet in landscape. The two-panel Register already fits at about 1280×800. Phones need a one-column layout; leave that for later, or for manager reports only.
+**The screens are bundled in the APK (option 1, decided).** So **every store update needs the new APK on every tablet.** `build-package.ps1` builds the APK with the same version as the package and puts a copy in the server's `wwwroot/downloads/AMGC-POS.apk`. Tablets download it from **Settings → Devices** (a QR code) and are told when it's needed (the update banner). The alternative, loading the screens from the server, was considered and set aside.
 
-**Phase 1, built: tablets as browser registers.** No app to install yet. A tablet on the store's Wi-Fi scans the QR code on **Settings → Devices** with its camera, which opens the app in its browser (`http://<server>:5000`), and signs in as usual. Phase 1 added touch mode, the offline screen, Settings → Devices with `GET system/server-info`, and the 58 mm receipt setting (see Features). Printing is still the browser's print dialog (`react-to-print`), so a Bluetooth printer only works if the tablet's own print service can reach it; direct ESC/POS printing is step 3.
+### How the app connects (`utils/server.util.ts`, `stores/common/server.store.ts`)
+- **The Connect screen** (`pages/connect/ConnectServer.tsx`, `connect.hook.ts`): `View.tsx` shows it instead of the routes while `isNativeApp` (`utils/native.util.ts`) and no server is saved, or after "Change" on the sign-in screen.
+  - **Scan the QR code** (`@capacitor/barcode-scanner`, the default) or **type the address**. `normalizeServerAddress` accepts `192.168.1.10`, `192.168.1.10:5000` or the QR's `http://192.168.1.10:5000` (port 5000 by default).
+  - **It tests first:** `store-settings/public` and `system/version` through a fresh axios instance, then "Connect to Allia's Café?" with the logo, and a warning when the versions differ.
+  - **Saving** stores `amgc_server_url` in localStorage, sets `axios.defaults.baseURL` to `<server>/api/`, and signs out with a full reload (`auth.store.logout()`), so the new store's branding and no old token remain.
+- **At startup** `main.tsx` calls `applySavedServer()` after the imports, so it overrides the baseURL `http_service.ts` (verbatim) set when it loaded. `view.hook` doesn't call `account/me` until a server is saved.
+- **The sign-in screen** shows "Store server 192.168.1.10:5000 · Change" in the app (`login.hook.ts`).
+- **Origin and CORS:** the app's pages load from `http://localhost` (`server.androidScheme: "http"` in `capacitor.config.ts`, so an http page calls an http API without mixed-content blocking). The API allows that origin in `Cors:AllowedOrigins`. The manifest sets `usesCleartextTraffic`, since store servers are plain http on the LAN.
+- **The offline screen** already probes `axios.defaults.baseURL`, so it follows the saved server.
 
-**Ready to start:** `amgc-pos-api` exists. A tablet can reach it over Wi-Fi once it listens on the LAN: its production settings already listen on `http://0.0.0.0:5000`, while Development pins `localhost`. The mock only runs inside `yarn dev`, so it's no use to an installed APK.
+### Updates (`hooks/app/app-update.hook.ts`, `components/common/AppUpdateBanner.tsx`)
+- `APP_VERSION` is `VITE_APP_VERSION`, which `build-package.ps1` sets to the package version for `yarn build` (`dev` otherwise).
+- In the app, `system/version` is checked (every 10 minutes too). When it differs from `APP_VERSION` and neither is `dev`, a banner shows both versions and **Download the update**, which opens `<server>/downloads/AMGC-POS.apk` in the tablet's browser (Capacitor sends any non-app address there). Android installs it over the old app, keeping its saved server and printer.
+- **Android only installs an update with a higher version code** and the **same signing key**. `build-package.ps1` passes a version code of minutes since 2024 (`-PappVersionCode`), and signs with the key from `android/keystore.properties`.
 
-**Tooling:** Android Studio (SDK and emulator) and JDK 17, plus these packages:
-- `@capacitor/core`, `@capacitor/cli` and `@capacitor/android`
-- `npx cap init`, with `webDir: "build"`, because Vite builds into `build/`
-- `npx cap add android`
+### Bluetooth printing (`utils/escpos.ts`, `ReceiptPrinterPlugin.java`)
+- **The plugin is the app's own** (`android/app/src/main/java/com/amgc/pos/ReceiptPrinterPlugin.java`, registered in `MainActivity`): `listPrinters()` returns paired devices, `print({ address, data })` sends base64 bytes over classic Bluetooth serial (SPP, the PT-210 / Xprinter / GOOJPRT kind), in 512-byte chunks, falling back to an insecure socket. It asks for "Nearby devices" on Android 12+. No scanning: printers are paired once in Android's Bluetooth settings.
+- **`utils/escpos.ts`** builds the bytes: `saleReceiptBytes` and `zReadingBytes` mirror `SaleReceipt` and `ZReading` line for line, at 32 characters a line on 58 mm paper and 48 on 80 mm (`receiptWidth`). Code page 437, with the peso sign printed as "P" and accents it lacks dropped. No logo (raster images vary too much between cheap printers). `testPageBytes` prints a line of digits that should fill exactly one line; `cashDrawerBytes` is `ESC p 0 25 250`.
+- **One Print button, two printers:** `useReceiptPrint` (`hooks/printer/receipt-printer.hook.ts`) sends ESC/POS when `isNativeApp` and a printer is chosen, otherwise opens `react-to-print`. The receipt after Charge, a reprint from Sales and a Z reading all use it.
+- **This tablet's printer** is saved on the device (`stores/common/printer.store.ts`: `amgc_receipt_printer`, `amgc_open_cash_drawer`) and chosen on Settings → Devices (`ReceiptPrinterCard`), with a test page.
+- **The cash drawer** opens after a cash sale when "Open the cash drawer on cash sales" is on (`openCashDrawerAfterCashSale` in the payment hook). A failure only warns; the sale is already saved.
 
-Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. Distribute by direct APK install, or a private Play Store listing for easier updates.
+### Android settings
+- **Screen awake:** `FLAG_KEEP_SCREEN_ON` in `MainActivity`.
+- **minSdk 26** (Android 8; the scanner's minimum), target and compile SDK 35.
+- **Kiosk:** not built in. Use Android's **App pinning** (Settings → Security) to keep a tablet on the app.
 
-**Work, in order:**
-1. **Connecting to the store server.** `VITE_API_URL` is fixed at build time, which can't work across stores.
-   - **The "Connect to your store" screen.** It shows on first launch, when no address is saved, before sign-in.
-     - **Two ways in:** **Scan QR** (the default) or **Type the address** (e.g. `192.168.1.10:5000`).
-     - **Test it first.** Call `store-settings/public`, then show the store's name and logo: "Connect to Allia's Café?". That confirms it's the right server.
-     - **Save it** on the tablet (Capacitor Preferences or localStorage).
-     - **Apply it** by setting `axios.defaults.baseURL` at startup, outside `http_service.ts`, which stays verbatim.
-     - **Change it later** through a "Change server" link on the sign-in screen.
-   - **QR pairing, the PC side.** Add a **Settings → Devices** page (Owner and Manager) that shows a QR code for tablets to scan.
-     - **Built in Phase 1.** The page exists (`pages/devices/Devices.tsx`, `devices.hook.ts`).
-     - **The QR holds only the address, never a token,** so scanning it doesn't sign anyone in. Tablets still sign in with a PIN or password. Format: the plain web URL, `http://192.168.1.10:5000`, so a phone or tablet camera opens it in the browser. The app's scanner reads the same code and adds `/api/` for its `baseURL`. This replaced an earlier `amgcpos://connect?...` plan, which only the app could open.
-     - **The API supplies the address** (`GET system/server-info`, in the contract). A browser on the server PC often opens the app as `localhost`, so it can't know the LAN address itself.
-     - **More than one address:** the owner picks which one the QR shows (`devices.store.selectedAddress`).
-     - **Libraries:** antd's built-in `QRCode` draws it. The app will scan it with a Capacitor barcode-scanning plugin (camera).
-   - **Store setup checklist:** reserve a fixed LAN address for the server PC in the router (a DHCP reservation). Otherwise the address can change after a router restart, and every tablet loses the server.
-2. **Touch-first screens. Built in Phase 1:** see "Touch mode" under Features. Not done: replacing hover-only tooltips with visible labels, where a page still has them.
-3. **Printing to Bluetooth thermal printers (ESC/POS).**
-   - **Why:** `react-to-print` uses the system print dialog, which doesn't fit a counter. Common PH printers (Xprinter, GOOJPRT, Rongta; 58 mm or 80 mm) take raw ESC/POS bytes over Bluetooth.
-   - **How:** a Capacitor Bluetooth printer plugin, plus a `utils/escpos.ts` that turns a sale, a Z reading or a void into ESC/POS text lines. Reuse the data `SaleReceipt` and `ZReading` print; the React components stay for the screen and for PC printing.
-   - **Printer setup:** pair once in Settings and save the printer's address on the device. The paper width is already a store setting (`receiptWidth`: 58 mm is 32 characters a line, 80 mm is 48).
-   - **Cash drawer:** the drawer kick command goes through the printer, sent on a cash sale.
-   - **Fallback:** the PC web app keeps `react-to-print`. Pick the path by platform (`Capacitor.isNativePlatform()`).
-4. **Android settings:**
-   - Allow cleartext `http://` to the LAN through a network security config, unless the API serves HTTPS.
-   - Keep the screen awake.
-   - Lock the tablet to the app with screen pinning or kiosk mode.
-5. **Later:**
-   - an offline queue for sales when Wi-Fi drops (save, then send when back)
-   - a phone layout for reports
+### Building
+- **Tools on the build PC:** JDK 21 (`winget install Microsoft.OpenJDK.21`; Android Studio's own Java is too old on this PC) and the Android SDK with platform 35. Android Studio itself isn't needed: Gradle runs from the command line.
+- **The signing key, once:** `amgc-pos-api\deploy\android-keystore.ps1` makes `%USERPROFILE%\.amgc-pos\amgc-pos-release.jks` and `android/keystore.properties` (git-ignored). **Back up both.** Losing them means every tablet must uninstall the app before it can install an update.
+- **For a store:** `build-package.ps1` does `yarn build`, `npx cap sync android` and `gradlew assembleRelease`, giving `out\AMGC-POS-<version>.apk` and the copy in the package. It skips the APK with a warning when the JDK, SDK or key is missing (`-SkipAndroid` to skip it on purpose).
+- **By hand (debug, for a test device):** `yarn build`, `npx cap sync android`, then in `android/` `gradlew assembleDebug` with `JAVA_HOME` set to JDK 21. On this PC Gradle needs `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=<a plain folder>`, or it fails with "Unable to establish loopback connection" (`build-package.ps1` sets it, using `android/.gradle-tmp`).
+- **Debugging:** `webContentsDebuggingEnabled` is false in `capacitor.config.ts`; turn it on for a debug build to inspect the app from Chrome's `chrome://inspect`.
+
+### Not done yet
+- testing on a real tablet with a real Bluetooth printer
+- an offline queue for sales when Wi-Fi drops (save, then send when back)
+- the logo on Bluetooth receipts
+- a phone layout for reports
 
 ## Features so far
 
@@ -238,7 +240,7 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
 - **Settings → Store details:** name, tagline, address, TIN, VAT registration, receipt footer and **receipt paper** (`receiptWidth`, 80 or 58 mm, `enums/receipt.enum.ts`), with a live receipt preview.
   - **Receipt paper** applies to every receipt and Z reading: `utils/receipt.util.ts` gives `.amgc-receipt` an `is-58mm` class (narrower on screen, a size smaller) and react-to-print the matching `@page` size (`receiptPageStyle`).
   - **In a dialog, a long receipt scrolls inside its stage** on screens under 900px tall, so Print, Void and Start next order stay in view (`_store-settings.scss`).
-- **Settings → Devices** (Owner and Manager): a QR code of this server's web address for tablets to scan, the address to type instead (copyable), a picker when the PC has more than one network, and a reminder to reserve the address in the router. It reads `system/server-info` (`SERVER_INFO_KEY`, never stale; Refresh refetches). The mock lists the dev PC's addresses with Vite's port, skipping virtual adapters by name. The page also holds **This device**: the touch mode setting.
+- **Settings → Devices** (Owner and Manager): a QR code of this server's web address for tablets to scan, the address to type instead (copyable), a picker when the PC has more than one network, and a reminder to reserve the address in the router. It reads `system/server-info` (`SERVER_INFO_KEY`, never stale; Refresh refetches). The mock lists the dev PC's addresses with Vite's port, skipping virtual adapters by name. Below it, **Android app**: a QR code of the APK on this server (`androidAppPath`), when the package has one. The right column holds **This device**: the touch mode setting and, in the Android app, the **Receipt printer** (see "Android tablet version").
 - **Touch mode** (tablets): bigger targets, no keyboard hints, and no focus grabbing that would raise the on-screen keyboard. On a PC nothing changes.
   - **When:** `useTouchMode()` (`hooks/touch/touch.hook.ts`) is `(pointer: coarse)` through `useSyncExternalStore`, or the device's override: Auto, On or Off, saved in localStorage (`amgc_touch_mode`, `stores/common/device.store.ts`) and set on Settings → Devices.
   - **How it applies:** `app.hook.ts` mirrors it on `<html data-touch="true">` and sets antd's `componentSize="large"`. `_touch.scss` (the last partial) holds the CSS: `.amgc-touch-hide` / `.amgc-touch-only`, tile pressed state, 44px − / + and Remove, taller choice buttons and chips, padded table rows, bigger menu and context-menu items. Code outside components asks `isTouchMode()` (`utils/touch.util.ts`), which reads the attribute.
@@ -303,6 +305,6 @@ Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. 
 Everything in the prototype is built, plus voids and closing the day, and `amgc-pos-api` answers all of it. Likely next steps:
 - partial refunds (single items) if stores ask for them
 - BIR accreditation fields on receipts
-- the Android tablet app (above): Phase 1 runs tablets in the browser; next are the store-server screen, ESC/POS Bluetooth printing and the Android settings
+- testing the Android app on a real tablet with a Bluetooth printer (see "Android tablet version")
 - a full test install on a spare PC or VM (registering the service, firewall rule and backup task hasn't been run yet)
 - testing Phase 1 on a real tablet over the store's Wi-Fi (checked so far in a desktop browser at tablet sizes with touch mode forced on)

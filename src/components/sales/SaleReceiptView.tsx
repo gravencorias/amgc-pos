@@ -13,7 +13,7 @@ interface IProps {
 // A past receipt from the Sales list: the same layout the register printed, with reprint,
 // and a void for a sale that's still completed.
 const SaleReceiptView = ({ onVoid }: IProps) => {
-  const { receiptRef, sale, settings, print, handleClose } = useSaleReceiptHook();
+  const { receiptRef, sale, settings, print, isPrinting, handleClose } = useSaleReceiptHook();
   if (!sale) return null;
   const isVoid = sale.status === SaleStatusEnum.voided;
 
@@ -40,7 +40,7 @@ const SaleReceiptView = ({ onVoid }: IProps) => {
               Void sale
             </Button>
           )}
-          <Button type="primary" size="large" icon={<PrintIcon size={18} />} onClick={() => print()}>
+          <Button type="primary" size="large" icon={<PrintIcon size={18} />} loading={isPrinting} onClick={() => print()}>
             Reprint
           </Button>
         </div>

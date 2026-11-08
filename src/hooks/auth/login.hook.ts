@@ -13,6 +13,8 @@ import { PIN_MAX_LENGTH, useLoginStore } from "../../stores/data/login.store";
 import { CONSTANT_ROUTES } from "../../constants/constantRoutes";
 import { Toast } from "../../utils/http_service";
 import { PUBLIC_STORE_SETTINGS_KEY } from "../store-settings/store-settings.hook";
+import { useServerStore } from "../../stores/common/server.store";
+import { isNativeApp } from "../../utils/native.util";
 
 export const PIN_MIN_LENGTH = 4;
 
@@ -119,5 +121,8 @@ export const useLoginHook = () => {
     isPasswordLoading: passwordMutation.isLoading,
     lampOn,
     toggleLamp,
+    // The Android app shows which store server it uses, with a way to change it.
+    serverAddress: isNativeApp ? useServerStore.getState().serverUrl?.replace(/^https?:\/\//, "") : undefined,
+    changeServer: useServerStore.getState().startChange,
   };
 };
