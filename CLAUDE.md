@@ -150,6 +150,68 @@ A new API route changes three things together: its row in `api-contract.md`, a h
 
 Build the real API in a sibling `amgc-pos-api` repo with the `senior-backend-dcwd-developer` skill. Then set `VITE_API_URL` to it and `VITE_USE_MOCK_API=false`. `.env` has `http://localhost:5000/api/`, but `.env.development` and `.env.production` both override it, so change the mode-specific file.
 
+## Android tablet version (planned, not started)
+
+**Decided:** the tablet version has **all the same features** as the PC app, and it lives **in this repo**, not a separate project. A feature is built once, and both get it; the tablet differences are a touch switch and a printing switch. **Pairing by QR code** is part of it (step 1).
+
+The plan is to ship this same React app as an Android app with **Capacitor**, not a rewrite. The `android/` folder lives in this repo, and about 95% of the code is shared. Tablets are extra registers, talking over Wi-Fi to the store's own `amgc-pos-api` on a PC or mini-PC. Data stays on the store's server, as with PC registers, and a store can mix PCs and tablets. A tablet-only store (no PC) would need a cloud API or an on-device database; that's out of scope.
+
+**Target:** a 10-inch tablet in landscape. The two-panel Register already fits at about 1280×800. Phones need a one-column layout; leave that for later, or for manager reports only.
+
+**Start after `amgc-pos-api` exists.** The mock only runs inside `yarn dev`. Steps 1 and 2 below can be prototyped earlier against `yarn dev --host` over Wi-Fi.
+
+**Tooling:** Android Studio (SDK and emulator) and JDK 17, plus these packages:
+- `@capacitor/core`, `@capacitor/cli` and `@capacitor/android`
+- `npx cap init`, with `webDir: "build"`, because Vite builds into `build/`
+- `npx cap add android`
+
+Build with `yarn build`, then `npx cap sync`, then the APK from Android Studio. Distribute by direct APK install, or a private Play Store listing for easier updates.
+
+**Work, in order:**
+1. **Connecting to the store server.** `VITE_API_URL` is fixed at build time, which can't work across stores.
+   - **The "Connect to your store" screen.** It shows on first launch, when no address is saved, before sign-in.
+     - **Two ways in:** **Scan QR** (the default) or **Type the address** (e.g. `192.168.1.10:5000`).
+     - **Test it first.** Call `store-settings/public`, then show the store's name and logo: "Connect to Allia's Café?". That confirms it's the right server.
+     - **Save it** on the tablet (Capacitor Preferences or localStorage).
+     - **Apply it** by setting `axios.defaults.baseURL` at startup, outside `http_service.ts`, which stays verbatim.
+     - **Change it later** through a "Change server" link on the sign-in screen.
+   - **QR pairing, the PC side.** Add a **Settings → Devices** page (Owner and Manager) that shows a QR code for tablets to scan.
+     - **The QR holds only the address, never a token,** so scanning it doesn't sign anyone in. Tablets still sign in with a PIN or password. Format: `amgcpos://connect?api=http%3A%2F%2F192.168.1.10%3A5000%2Fapi%2F&store=Allia%27s%20Caf%C3%A9`.
+     - **The API supplies the address.** A browser on the server PC often opens the app as `localhost`, so it can't know the LAN address itself. So `amgc-pos-api` needs a route, e.g. `GET system/server-info`, that returns the server's LAN address(es) and port. Add it to `api-contract.md`, the mock and a service.
+     - **More than one address:** if the server has several (Wi-Fi and cable), let the owner pick which one the QR shows.
+     - **Libraries:** draw the QR with a QR library (e.g. `qrcode.react`), and scan it on the tablet with a Capacitor barcode-scanning plugin (camera).
+   - **Store setup checklist:** reserve a fixed LAN address for the server PC in the router (a DHCP reservation). Otherwise the address can change after a router restart, and every tablet loses the server.
+2. **Touch-first screens.** The app is keyboard-and-mouse first. On touch, the same pages adjust; there's no separate tablet page.
+   - **Detecting touch:** a `useSyncExternalStore` hook like `window.size.hook.ts` (`pointer: coarse`). On a PC nothing changes.
+   - **Everywhere:**
+     - Tap targets of at least 44–48 px.
+     - Visible labels instead of hover-only tooltips.
+     - A visible **⋯** button on rows that today rely on a react-contexify right-click menu (Products, Staff).
+     - A pressed state instead of hover.
+   - **Register:**
+     - **Keys:** hide `RegisterShortcutBar` and the F-key hints. Every shortcut already has a button: make them bigger.
+     - **Search:** **don't auto-focus it**, or the on-screen keyboard pops up after every sale. Tapping tiles and chips is the main way to add items.
+     - **The ticket:** large round − / + steppers and a clear Remove button. Hide the arrow-key grid highlight.
+   - **Charge:** an on-screen **number pad** (like `PinPad`, with 00 and backspace) for cash received, plus bigger quick-cash buttons. That keeps the Android keyboard from covering the dialog.
+   - **Size and add-ons picker:** taller choice buttons. Hide the 1–9 hints.
+   - **Other forms:**
+     - **Close day count:** `inputMode="numeric"` on the boxes, optionally with + / − per denomination.
+     - **Void and reopen:** bigger reason chips.
+     - **Tables:** taller rows.
+3. **Printing to Bluetooth thermal printers (ESC/POS).**
+   - **Why:** `react-to-print` uses the system print dialog, which doesn't fit a counter. Common PH printers (Xprinter, GOOJPRT, Rongta; 58 mm or 80 mm) take raw ESC/POS bytes over Bluetooth.
+   - **How:** a Capacitor Bluetooth printer plugin, plus a `utils/escpos.ts` that turns a sale, a Z reading or a void into ESC/POS text lines. Reuse the data `SaleReceipt` and `ZReading` print; the React components stay for the screen and for PC printing.
+   - **Printer setup:** pair once in Settings, and save the printer's address and paper width (58 mm is 32 characters a line, 80 mm is 48).
+   - **Cash drawer:** the drawer kick command goes through the printer, sent on a cash sale.
+   - **Fallback:** the PC web app keeps `react-to-print`. Pick the path by platform (`Capacitor.isNativePlatform()`).
+4. **Android settings:**
+   - Allow cleartext `http://` to the LAN through a network security config, unless the API serves HTTPS.
+   - Keep the screen awake.
+   - Lock the tablet to the app with screen pinning or kiosk mode.
+5. **Later:**
+   - an offline queue for sales when Wi-Fi drops (save, then send when back)
+   - a phone layout for reports
+
 ## Features so far
 
 - **Login:** a PIN pad that works from the keyboard (digits, Backspace, Escape, Enter), and a password form. The brand panel has an SVG illustration (`LoginLoungeIllustration`) whose bean bag and mug take the brand color. Its floor lamp switches on and off by click, Enter or Space (`login.store.lampOn`); the lamp's key handler stops the event so Enter doesn't also submit the PIN.
